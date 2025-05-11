@@ -5,6 +5,7 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,6 +61,27 @@ public class KeycloakUserService {
         } catch (WebApplicationException ex) {
             String error = ex.getResponse().readEntity(String.class);
             throw new UserRegistrationException("Ошибка Keycloak: " + error);
+        }
+    }
+
+    /**
+     * Аутентификация пользователя через Keycloak.
+     */
+    public AccessTokenResponse authenticate(String username, String password) {
+        try {
+            Keycloak keycloak = KeycloakBuilder.builder()
+                    .serverUrl(serverUrl)
+                    .realm(realm)
+                    .clientId(clientId)
+                    .clientSecret(clientSecret)
+                    .grantType("client_credentials")
+                    .username(username)
+                    .password(password)
+                    .build();
+
+            return keycloak.tokenManager().getAccessToken();
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid username or password", e);
         }
     }
 }
