@@ -31,7 +31,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/*").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/v3/api-docs/swagger-config").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
                         .requestMatchers("/api/offline/**").hasRole("user")
+                        .requestMatchers("/room/**").hasRole("user")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -66,7 +73,7 @@ public class SecurityConfig {
             if (claims.containsKey("resource_access")) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> realmAccess = (Map<String, Object>) claims.get("resource_access");
-                if (realmAccess.containsKey("pokerClient")) {
+                if (realmAccess.containsKey("userPokerClient")) {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> clientAccess = (Map<String, Object>) realmAccess.get(clientId);
                     List<String> roles = (List<String>) clientAccess.get("roles");

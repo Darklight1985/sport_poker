@@ -7,8 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.dto.UserRegistrationDto;
 import ru.poker.sportpoker.service.KeycloakUserService;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/auth")
 public class RegistrationController {

@@ -1,10 +1,12 @@
 package ru.poker.sportpoker.domain;
 
 import jakarta.persistence.*;
+import jakarta.transaction.Transactional;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 import ru.poker.sportpoker.enums.StatusGame;
 
 import java.time.LocalDateTime;
@@ -18,13 +20,21 @@ import java.util.UUID;
 @Table(name = "game_room")
 public class GameRoom {
 
+    @Transient
+    private CountDownTimer countDownTimer;
+
+    public void letsPlay(int time) {
+        countDownTimer = new CountDownTimer(time);
+        status = StatusGame.PLAY;
+    }
+
     /**
      * Глобальный идентификатор объекта.
      */
     @Id
-    @GeneratedValue(generator = "system-uuid")
-    @GenericGenerator(name = "system-uuid", strategy = "uuid2")
-    @Column(name = "id", updatable = false)
+    @GeneratedValue(generator = "UUID")
+    @UuidGenerator(style = UuidGenerator.Style.RANDOM)
+    @Column(updatable = false)
     private UUID id;
 
     /**
@@ -50,4 +60,5 @@ public class GameRoom {
      */
     @Enumerated(EnumType.STRING)
     private StatusGame status = StatusGame.PREP;
+
 }
