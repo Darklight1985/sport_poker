@@ -1,11 +1,14 @@
 package ru.poker.sportpoker.config;
 
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -19,16 +22,16 @@ import java.util.Map;
 
 @EnableWebSecurity
 @Configuration
+@RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
 
-    @Value("${keycloak.resource}")
-    private String clientId;
+    private final KeycloakProperties keycloakProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/*").permitAll()
                         .requestMatchers("/error").permitAll()
@@ -73,9 +76,9 @@ public class SecurityConfig {
             if (claims.containsKey("resource_access")) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> realmAccess = (Map<String, Object>) claims.get("resource_access");
-                if (realmAccess.containsKey("userPokerClient")) {
+                if (realmAccess.containsKey(keycloakProperties.getResourceUser())) {
                     @SuppressWarnings("unchecked")
-                    Map<String, Object> clientAccess = (Map<String, Object>) realmAccess.get(clientId);
+                    Map<String, Object> clientAccess = (Map<String, Object>) realmAccess.get(keycloakProperties.getResourceUser());
                     List<String> roles = (List<String>) clientAccess.get("roles");
                     log.info("extracted roles: " + roles);
                     for (String role : roles) {

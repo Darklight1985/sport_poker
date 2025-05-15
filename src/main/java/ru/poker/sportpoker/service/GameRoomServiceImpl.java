@@ -1,10 +1,12 @@
 package ru.poker.sportpoker.service;
 
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 
 import java.util.UUID;
@@ -18,10 +20,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public void createGameRoom(CreateGameRoomDto dto) {
-        keycloakUserService.getCurrentUser();
+        String userId = keycloakUserService.getCurrentUser();
         GameRoom gameRoom = new GameRoom();
         gameRoom.setName(dto.getName());
-
+        gameRoom.setCreator(UUID.fromString(userId));
+        gameRoomRepository.save(gameRoom);
     }
 
     @Override
@@ -31,8 +34,11 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
-    public void updateGameRoom(UUID id, GameRoom gameRoom) {
-
+    @Transactional
+    public void updateGameRoom(UpdateGameRoomDto dto) {
+        GameRoom gameRoomOld = gameRoomRepository.findById(dto.getId())
+                .orElseThrow(() -> new NotFoundException(dto.getId().toString()));
+        gameRoomOld.setName(dto.getName());
     }
 
     @Override

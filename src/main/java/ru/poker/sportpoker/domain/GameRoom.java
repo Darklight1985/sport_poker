@@ -61,4 +61,7 @@ public class GameRoom {
     @Enumerated(EnumType.STRING)
     private StatusGame status = StatusGame.PREP;
 
+    @Column(updatable = false)
+    private UUID creator;
+
 }

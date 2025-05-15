@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.service.GameRoomService;
 
 import java.util.UUID;
@@ -28,6 +29,12 @@ public class GameRoomController {
     public ResponseEntity<Void> createGameRoom(@RequestBody CreateGameRoomDto dto) {
         gameRoomService.createGameRoom(dto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PutMapping()
+    public ResponseEntity<Void> updateGameRoom(@RequestBody UpdateGameRoomDto dto) {
+        gameRoomService.updateGameRoom(dto);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
     @GetMapping("/{id}")

@@ -2,6 +2,7 @@ package ru.poker.sportpoker.service;
 
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 
 import java.util.UUID;
 
@@ -11,7 +12,7 @@ public interface GameRoomService {
 
     public GameRoom getGameRoom(UUID id);
 
-    public void updateGameRoom(UUID id, GameRoom gameRoom);
+    public void updateGameRoom(UpdateGameRoomDto dto);
 
     public void deleteGameRoom(UUID id);
 }
