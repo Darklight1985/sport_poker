@@ -15,4 +15,6 @@ public interface GameRoomService {
     public void updateGameRoom(UpdateGameRoomDto dto);
 
     public void deleteGameRoom(UUID id);
+
+    String getLinkToRoom(UUID id);
 }

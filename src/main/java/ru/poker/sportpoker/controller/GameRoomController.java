@@ -43,6 +43,11 @@ public class GameRoomController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @GetMapping("/{id}/link")
+    public String getLinkRoom(@PathVariable UUID id) {
+        return gameRoomService.getLinkToRoom(id);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGameRoom(@PathVariable UUID id) {
         gameRoomService.deleteGameRoom(id);
