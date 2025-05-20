@@ -5,11 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Schema(description = "ДТО, описывающий основную информацию для создания игровой комнаты")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateGameRoomDto {
 
-    @Schema()
+    @Schema(description = "Название игровой комнаты")
     private String name;
 }
