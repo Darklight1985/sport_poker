@@ -1,13 +1,15 @@
 package ru.poker.sportpoker.service;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
@@ -63,19 +65,52 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public void deleteGameRoom(UUID id) {
-
         gameRoomRepository.deleteById(id);
     }
 
 
     @Override
     public String getLinkToRoom(UUID id) {
-        GameRoom gameRoomOld = gameRoomRepository.findById(id)
+        gameRoomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id.toString()));
         return "http://" + address + ":" + port + "/room/join/" + Jwts.builder()
                 .claim("roomId", id)
                 .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
                 .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
                 .compact();
+    }
+
+    @Override
+    public ResponseEntity<?> joinRoom(String token) {
+        // principal == null если пользователь не залогинен
+        String userId = keycloakUserService.getCurrentUser();
+        if (userId == null) {
+            // Сохранить токен во временное хранилище (например, в сессию)
+            // и отправить на страницу логина
+            // После логина пользователь будет возвращен обратно
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "/login?redirect=/join/" + token)
+                    .build();
+        }
+
+        String roomId;
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
+                    .parseClaimsJws(token)
+                    .getBody();
+            roomId = claims.get("roomId", String.class);
+        } catch (JwtException e) {
+            return ResponseEntity.badRequest().body("Invalid or expired link");
+        }
+
+        //TODO добавить проверку
+        GameRoom gameRoomOld = gameRoomRepository.findById(UUID.fromString(roomId))
+                .orElseThrow(() -> new NotFoundException(roomId.toString()));
+        gameRoomOld.getPlayers().add(UUID.fromString(userId));
+        gameRoomRepository.save(gameRoomOld);
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .build();
     }
 }

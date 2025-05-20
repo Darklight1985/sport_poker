@@ -1,5 +1,6 @@
 package ru.poker.sportpoker.service;
 
+import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
@@ -17,4 +18,6 @@ public interface GameRoomService {
     public void deleteGameRoom(UUID id);
 
     String getLinkToRoom(UUID id);
+
+    ResponseEntity<?> joinRoom(String token);
 }

@@ -10,6 +10,8 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -65,7 +67,12 @@ public class KeycloakUserService {
 
     public String getCurrentUser() {
         // Получение текущей аутентификации
-        JwtAuthenticationToken tokenA = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        Authentication authentication = securityContext.getAuthentication();
+        if ("anonymousUser".equals(authentication.getPrincipal())) {
+            return null;
+        }
+        JwtAuthenticationToken tokenA = (JwtAuthenticationToken) authentication;
         var atr = tokenA.getTokenAttributes();
 
         // Получение идентификатора пользователя из claims

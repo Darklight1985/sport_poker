@@ -1,5 +1,7 @@
 package ru.poker.sportpoker.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ public class RegistrationController {
         this.keycloakUserService = keycloakUserService;
     }
 
+    @Operation(description = "Регистрация нового пользователя")
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegistrationDto dto) {
         try {
@@ -27,8 +30,10 @@ public class RegistrationController {
         }
     }
 
+    @Operation(description = "Вход в приложение")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<?> login(@Parameter(description = "Никнейм пользователя") @RequestParam String username,
+                                   @Parameter(description = "Пароль пользователя") @RequestParam String password) {
         try {
             AccessTokenResponse tokenResponse = keycloakUserService.authenticate(username, password);
             return ResponseEntity.ok(tokenResponse);
