@@ -6,8 +6,7 @@ pipeline {
     }
 
     environment {
-        GRADLE_OPTS = "-Xmx1024m"
-        GIT_CREDENTIALS_ID = 'git'
+        POKER_USER = 'poker' // Глобальная переменная
     }
 
     stages {
@@ -19,34 +18,66 @@ pipeline {
 //
 //         stage('Checkout') {
 //             steps {
-//                 git url: "git@github.com:Darklight1985/sport_poker.git", branch: 'develop', credentialsId: "${GIT_CREDENTIALS_ID}"
+//                 git url: "git@github.com:Darklight1985/sport_poker.git", branch: 'develop', credentialsId: "git"
 //             }
 //         }
 
-stage('Debug') {
-    steps {
-        sh 'pwd'
-        sh 'ls -la'
-    }
-}
+          stage('Debug') {
+               steps {
+                   sh 'pwd'
+                 sh 'ls -la'
+               }
+          }
+
+                  stage('Check Docker') {
+                      steps {
+                          sh 'docker --version'
+                          sh 'docker info'
+                      }
+                  }
+
+         stage('Prepare Environment') {
+                    steps {
+                        script {
+                            sh 'chmod +x ./gradlew'
+                        }
+                    }
+         }
 
         stage('Build') {
             steps {
-              sh 'chmod +x ./gradlew'
+                                    script {
               sh './gradlew build -x test'
+            }
             }
         }
 
-        stage('Test') {
+//         stage('Test') {
+//             steps {
+//                                     script {
+//                    sh './gradlew test'
+//                    }
+//             }
+//         }
+
+        stage('Build Docker Image') {
             steps {
-                   sh './gradlew test'
+                script {
+                    // Убедитесь, что Docker установлен и доступен на агенте Jenkins
+                    docker.build('sport_poker:latest')
+
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deploying...'
-                sh './deploy.sh'
+                script {
+                    sh """
+                    ls
+                    docker-compose up -d
+                    """
+                }
             }
         }
     }

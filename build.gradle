@@ -5,12 +5,11 @@ plugins {
 }
 
 group = 'ru.poker'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
-    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 configurations {
