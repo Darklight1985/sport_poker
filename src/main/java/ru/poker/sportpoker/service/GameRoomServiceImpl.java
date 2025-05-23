@@ -24,7 +24,6 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-
 //TODO везде добавить валидацию что это комната того кем она создана
 public class GameRoomServiceImpl implements GameRoomService {
 
@@ -82,12 +81,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public ResponseEntity<?> joinRoom(String token) {
-        // principal == null если пользователь не залогинен
         String userId = keycloakUserService.getCurrentUser();
         if (userId == null) {
-            // Сохранить токен во временное хранилище (например, в сессию)
-            // и отправить на страницу логина
-            // После логина пользователь будет возвращен обратно
             return ResponseEntity.status(HttpStatus.FOUND)
                     .header("Location", "/login?redirect=/join/" + token)
                     .build();

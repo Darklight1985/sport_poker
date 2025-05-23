@@ -62,6 +62,7 @@ public class GameRoom {
     @Column(updatable = false)
     private UUID creator;
 
-    @Type(value = JsonBinaryType.class)
+    @JdbcTypeCode(java.sql.Types.OTHER) // Указываем, что это тип OTHER (jsonb)
+    @Column(name = "players", columnDefinition = "jsonb")
     private Set<UUID> players = new HashSet<>();
 }
