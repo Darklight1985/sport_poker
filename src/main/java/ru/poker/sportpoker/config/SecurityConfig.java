@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/v3/api-docs/swagger-config").permitAll()
                         .requestMatchers("/webjars/**").permitAll()
-                        .requestMatchers("/api/offline/**").hasRole("user")
+                        .requestMatchers("/room/join/**").permitAll()
                         .requestMatchers("/room/**").hasRole("user")
                         .anyRequest().authenticated()
                 )

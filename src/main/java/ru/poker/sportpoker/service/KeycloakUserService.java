@@ -1,9 +1,5 @@
 package ru.poker.sportpoker.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
@@ -14,11 +10,9 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.config.KeycloakProperties;
@@ -73,14 +67,12 @@ public class KeycloakUserService {
 
     public String getCurrentUser() {
         // Получение текущей аутентификации
-        Authentication authentication = (Authentication) SecurityContextHolder.getContext().getAuthentication();
-
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        Authentication authentication = securityContext.getAuthentication();
+        if ("anonymousUser".equals(authentication.getPrincipal())) {
+            return null;
+        }
         JwtAuthenticationToken tokenA = (JwtAuthenticationToken) authentication;
-        // Получение Principal объекта, содержащего JWT
-        Jwt principal = (Jwt) authentication.getPrincipal();
-
-        // Извлечение JWT токена
-        String token = principal.getTokenValue();
         var atr = tokenA.getTokenAttributes();
 
         // Получение идентификатора пользователя из claims

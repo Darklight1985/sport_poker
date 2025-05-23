@@ -1,16 +1,14 @@
 package ru.poker.sportpoker.domain;
 
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.*;
 import ru.poker.sportpoker.enums.StatusGame;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Getter
@@ -64,4 +62,6 @@ public class GameRoom {
     @Column(updatable = false)
     private UUID creator;
 
+    @Type(value = JsonBinaryType.class)
+    private Set<UUID> players = new HashSet<>();
 }
