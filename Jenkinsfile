@@ -5,45 +5,55 @@ pipeline {
         git 'Default'
     }
 
-
     environment {
-        // Определите здесь переменные окружения, которые могут понадобиться для сборки
         GRADLE_OPTS = "-Xmx1024m"
+        GIT_CREDENTIALS_ID = 'git'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/develop']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/your-repo/your-project.git']]])
-            }
-        }
+//         stage('SSH Key Scanning') {
+//             steps {
+//                 sh 'ssh-keyscan github.com >> ~/.ssh/known_hosts'
+//             }
+//         }
+//
+//         stage('Checkout') {
+//             steps {
+//                 git url: "git@github.com:Darklight1985/sport_poker.git", branch: 'develop', credentialsId: "${GIT_CREDENTIALS_ID}"
+//             }
+//         }
+
+stage('Debug') {
+    steps {
+        sh 'pwd'
+        sh 'ls -la'
+    }
+}
 
         stage('Build') {
             steps {
-                sh '''
-                    ./gradlew build -x test
-                '''
+              sh 'chmod +x ./gradlew'
+              sh './gradlew build -x test'
             }
         }
 
         stage('Test') {
             steps {
-                sh '''
-                    ./gradlew test
-                '''
+                   sh './gradlew test'
             }
         }
 
         stage('Deploy') {
-            // Добавьте шаги для деплоя, если это необходимо
-            // Например:
-            // sshPublisher(publisher: [allowAllHosts: true], recipients: '', source: '.', target: 'build/libs/your-artifact.jar')
+            steps {
+                echo 'Deploying...'
+                sh './deploy.sh'
+            }
         }
     }
 
-    post {
-        always {
-            cleanWs()
-        }
-    }
+//    post {
+  //      always {
+  //          cleanWs()
+ //       }
+ //   }
 }
