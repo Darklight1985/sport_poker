@@ -11,7 +11,7 @@ pipeline {
         KEYCLOAK_DB_USER = credentials('keycloak-db-user')
         KEYCLOAK_DB_PASS = credentials('keycloak-db-pass')
         KEYCLOAK_ADMIN = credentials('keycloak-admin')
-        KEYCLOAK_PASS = credentials('keycloak-pass')
+  //      KEYCLOAK_PASS = credentials('keycloak-pass')
     }
 
     stages {
