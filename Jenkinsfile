@@ -7,11 +7,11 @@ pipeline {
 
     environment {
         POKER_USER = credentials('poker-user') // Глобальная переменная
-   //     POKER_BASE_PASS = credentials('poker-base-pass')
-   //     KEYCLOAK_DB_USER = credentials('keycloak-db-user')
-    //    KEYCLOAK_DB_PASS = credentials('keycloak-db-pass')
-   //     KEYCLOAK_ADMIN = credentials('keycloak-admin')
-  //      KEYCLOAK_PASS = credentials('keycloak-pass')
+        POKER_BASE_PASS = credentials('poker-base-pass')
+        KEYCLOAK_DB_USER = credentials('keycloak-db-user')
+        KEYCLOAK_DB_PASS = credentials('keycloak-db-pass')
+        KEYCLOAK_ADMIN = credentials('keycloak-admin')
+        KEYCLOAK_PASS = credentials('keycloak-pass')
     }
 
     stages {
