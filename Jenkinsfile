@@ -59,13 +59,13 @@ pipeline {
             }
         }
 
-//         stage('Test') {
-//             steps {
-//                                     script {
-//                    sh './gradlew test'
-//                    }
-//             }
-//         }
+        stage('Test') {
+            steps {
+                                    script {
+                   sh './gradlew test'
+                   }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {

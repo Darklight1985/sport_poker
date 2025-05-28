@@ -89,7 +89,7 @@ public class GameRoomServiceImpl implements GameRoomService {
             // и отправить на страницу логина
             // После логина пользователь будет возвращен обратно
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .header("Location", "/login?redirect=/join/" + token)
+                    .header("Location", "/login?redirect=/room/join/" + token)
                     .build();
         }
 
