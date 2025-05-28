@@ -11,7 +11,7 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
 
-    private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER;
+    static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER;
 
     static {
         POSTGRESQL_CONTAINER = new PostgreSQLContainer<>("postgres:13")
