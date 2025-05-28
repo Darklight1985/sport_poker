@@ -14,6 +14,8 @@ pipeline {
         KEYCLOAK_PASS = credentials('keycloak-pass')
         CLIENT_SECRET = credentials('client-secret')
         USER_CLIENT_SECRET = credentials('user-client-secret')
+
+        DOCKER_HOST = 'unix:///var/run/docker.sock'
     }
 
     stages {
