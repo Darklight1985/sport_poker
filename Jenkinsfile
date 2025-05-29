@@ -56,7 +56,7 @@ pipeline {
         stage('Build') {
             steps {
                                     script {
-              sh './gradlew build -x test'
+              sh './gradlew test -Dspring.profiles.active=test'
             }
             }
         }
