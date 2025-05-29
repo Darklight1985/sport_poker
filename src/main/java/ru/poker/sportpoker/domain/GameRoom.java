@@ -1,6 +1,6 @@
 package ru.poker.sportpoker.domain;
 
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
@@ -62,6 +62,7 @@ public class GameRoom {
     @Column(updatable = false)
     private UUID creator;
 
-    @Type(value = JsonBinaryType.class)
+    @JdbcTypeCode(java.sql.Types.OTHER) // Указываем, что это тип OTHER (jsonb)
+    @Column(name = "players", columnDefinition = "jsonb")
     private Set<UUID> players = new HashSet<>();
 }
