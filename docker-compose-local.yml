@@ -1,0 +1,45 @@
+version: '3.7'
+services:
+
+  database:
+    container_name: poker_base
+    image: postgres:14
+    environment:
+      POSTGRES_USER: poker
+      POSTGRES_PASSWORD: uc31bQ0j1z5Sxgw0ko4w
+      POSTGRES_DB: poker_base
+    volumes:
+      - poker_psql_vol:/var/lib/postgresql/data
+    networks:
+      - poker_net
+    ports:
+      - 5434:5432
+
+  keycloak:
+    container_name: Keycloak
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - 9090:8080
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_SCHEMA: public
+      DB_USER: root
+      DB_PASSWORD: root
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - poker_net
+    depends_on:
+      - database
+    command:
+      - "start-dev"
+
+networks:
+  poker_net:
+    external: true
+
+volumes:
+  poker_psql_vol:
+    external: true
