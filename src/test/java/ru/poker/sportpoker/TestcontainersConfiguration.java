@@ -12,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
@@ -24,10 +25,16 @@ class TestcontainersConfiguration {
     static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER;
 
     static {
+        Network externalNetwork = Network.builder()
+                .createNetworkCmdModifier(cmd -> cmd.withName("poker_net")) // Указываем имя внешней сети
+                .build();
+
         POSTGRESQL_CONTAINER = new PostgreSQLContainer<>("postgres:15.3")
                 .withDatabaseName("integration-tests-db")
                 .withUsername("sa")
-                .withPassword("password");
+                .withPassword("password")
+                .withNetwork(externalNetwork) // Подключаем контейнер к сети
+                .withNetworkAliases("postgres-test");
         POSTGRESQL_CONTAINER.start();
     }
 
