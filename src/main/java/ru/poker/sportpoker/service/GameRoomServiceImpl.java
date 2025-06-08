@@ -64,7 +64,10 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public void deleteGameRoom(UUID id) {
-        gameRoomRepository.deleteById(id);
+        GameRoom gameRoomOld = gameRoomRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(id.toString()));
+        gameRoomOld.clearPlayers();
+        gameRoomRepository.delete(gameRoomOld);
     }
 
 
@@ -100,9 +103,9 @@ public class GameRoomServiceImpl implements GameRoomService {
         }
 
         //TODO добавить проверку
-        GameRoom gameRoomOld = gameRoomRepository.findById(UUID.fromString(roomId))
+        GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(UUID.fromString(roomId))
                 .orElseThrow(() -> new NotFoundException(roomId.toString()));
-        gameRoomOld.getPlayers().add(UUID.fromString(userId));
+        gameRoomOld.addPlayer(UUID.fromString(userId));
         gameRoomRepository.save(gameRoomOld);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)

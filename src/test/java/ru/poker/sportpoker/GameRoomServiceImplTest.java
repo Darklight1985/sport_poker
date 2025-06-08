@@ -90,14 +90,28 @@ public class GameRoomServiceImplTest {
     }
 
     @Test
-    public void testDeleteGameRoom() {
+    public void testDeleteGameRoom_Success() {
         UUID id = UUID.randomUUID();
+        GameRoom gameRoom = new GameRoom();
+        when(gameRoomRepository.findById(id)).thenReturn(Optional.of(gameRoom));
 
         gameRoomService.deleteGameRoom(id);
 
-        verify(gameRoomRepository).deleteById(id);
+        verify(gameRoomRepository).findById(id);
+        verify(gameRoomRepository).delete(gameRoom);
     }
 
+    @Test
+    public void testDeleteGameRoom_NotFoundException() {
+        UUID id = UUID.randomUUID();
+        when(gameRoomRepository.findById(id)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(NotFoundException.class, () -> {
+            gameRoomService.deleteGameRoom(id);
+        });
+
+        assertEquals(id.toString(), exception.getMessage());
+    }
 
 //    @Test
 //    public void testJoinRoom_validToken() {

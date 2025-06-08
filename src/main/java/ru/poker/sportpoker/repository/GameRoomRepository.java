@@ -1,9 +1,17 @@
 package ru.poker.sportpoker.repository;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import ru.poker.sportpoker.domain.GameRoom;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
+
+    @Query(value = """
+            select gr from GameRoom gr
+             left join fetch gr.players
+            """)
+    Optional<GameRoom> findGameRoomWithPlayers(UUID roomId);
 }
