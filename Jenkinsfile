@@ -14,6 +14,7 @@ pipeline {
         KEYCLOAK_PASS = credentials('keycloak-pass')
         CLIENT_SECRET = credentials('client-secret')
         USER_CLIENT_SECRET = credentials('user-client-secret')
+        KEYCLOAK_ADDRESS= credentials('keycloak-address')
     }
 
     stages {
@@ -81,7 +82,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Убедитесь, что Docker установлен и доступен на агенте Jenkins
                     docker.build('sport_poker:latest')
 
                 }

@@ -46,6 +46,7 @@ services:
       USER_CLIENT_SECRET: "${USER_CLIENT_SECRET}"
       POKER_USER: "${POKER_USER}"
       POKER_BASE_PASS: "${POKER_BASE_PASS}"
+      KEYCLOAK_ADDRESS: "${KEYCLOAK_ADDRESS}"
     networks:
       - poker_net
 
