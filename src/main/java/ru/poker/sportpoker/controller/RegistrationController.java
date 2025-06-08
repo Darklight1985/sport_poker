@@ -23,7 +23,7 @@ public class RegistrationController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegistrationDto dto) {
         try {
-            keycloakUserService.createUser(dto.getUsername(), dto.getEmail(), dto.getPassword());
+            keycloakUserService.createUser(dto.getUsername(), dto.getEmail(), dto.getPassword(), dto.getFirstName(), dto.getLastName());
             return ResponseEntity.ok("User registered");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Registration failed: " + e.getMessage());

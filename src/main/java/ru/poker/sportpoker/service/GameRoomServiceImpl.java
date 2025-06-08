@@ -14,13 +14,13 @@ import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +29,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     private final GameRoomRepository gameRoomRepository;
     private final KeycloakUserService keycloakUserService;
+    private final ActivityUsersService activityUsersService;
 
     private static final String SECRET_KEY = "my-super-secret-key-which-is-32bytes";
 
@@ -83,6 +84,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> joinRoom(String token) {
         String userId = keycloakUserService.getCurrentUser();
         if (userId == null) {
@@ -106,9 +108,21 @@ public class GameRoomServiceImpl implements GameRoomService {
         GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(UUID.fromString(roomId))
                 .orElseThrow(() -> new NotFoundException(roomId.toString()));
         gameRoomOld.addPlayer(UUID.fromString(userId));
+        activityUsersService.joinRoom(UUID.fromString(roomId), UUID.fromString(userId));
         gameRoomRepository.save(gameRoomOld);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void readyToGame(UUID userId, UUID gameRoomId) {
+        boolean readyToGame = activityUsersService.setReadyToGame(gameRoomId, userId);
+        if (readyToGame) {
+            GameRoom gameRoomOld = gameRoomRepository.findById(gameRoomId)
+                    .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
+            gameRoomOld.setStatus(StatusGame.PLAY);
+        }
     }
 }

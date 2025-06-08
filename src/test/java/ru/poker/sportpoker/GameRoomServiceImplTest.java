@@ -15,6 +15,7 @@ import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.repository.GameRoomRepository;
+import ru.poker.sportpoker.service.ActivityUsersService;
 import ru.poker.sportpoker.service.GameRoomServiceImpl;
 import ru.poker.sportpoker.service.KeycloakUserService;
 
@@ -34,13 +35,16 @@ public class GameRoomServiceImplTest {
     @Mock
     private KeycloakUserService keycloakUserService;
 
+    @Mock
+    private ActivityUsersService activityUsersService;
+
     @InjectMocks
     private GameRoomServiceImpl gameRoomService;
 
     @BeforeAll
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        gameRoomService = new GameRoomServiceImpl(gameRoomRepository, keycloakUserService);
+        gameRoomService = new GameRoomServiceImpl(gameRoomRepository, keycloakUserService, activityUsersService);
     }
 
     @Test
@@ -106,9 +110,7 @@ public class GameRoomServiceImplTest {
         UUID id = UUID.randomUUID();
         when(gameRoomRepository.findById(id)).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(NotFoundException.class, () -> {
-            gameRoomService.deleteGameRoom(id);
-        });
+        Exception exception = assertThrows(NotFoundException.class, () -> gameRoomService.deleteGameRoom(id));
 
         assertEquals(id.toString(), exception.getMessage());
     }
