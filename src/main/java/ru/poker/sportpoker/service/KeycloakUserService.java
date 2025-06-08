@@ -75,9 +75,7 @@ public class KeycloakUserService {
         JwtAuthenticationToken tokenA = (JwtAuthenticationToken) authentication;
         var atr = tokenA.getTokenAttributes();
 
-        // Получение идентификатора пользователя из claims
         String userId = (String) atr.get("sub");
-        System.out.println("User ID: " + userId);
         return userId;
     }
 
