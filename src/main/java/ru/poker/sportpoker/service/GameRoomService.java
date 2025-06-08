@@ -9,15 +9,27 @@ import java.util.UUID;
 
 public interface GameRoomService {
 
-    public void createGameRoom(CreateGameRoomDto dto);
+    /**
+     * Создание игровой комнаты
+     * @param dto
+     */
+    void createGameRoom(CreateGameRoomDto dto);
 
-    public GameRoom getGameRoom(UUID id);
+    GameRoom getGameRoom(UUID id);
 
-    public void updateGameRoom(UpdateGameRoomDto dto);
+    void updateGameRoom(UpdateGameRoomDto dto);
 
-    public void deleteGameRoom(UUID id);
+    void deleteGameRoom(UUID id);
 
     String getLinkToRoom(UUID id);
 
     ResponseEntity<?> joinRoom(String token);
+
+    /**
+     * Метод указывает что игрок готов к игре в своей комнате
+     *
+     * @param userId Идентификатор пользователя
+     * @param gameRoomId Идентификатор игровой комнаты
+     */
+    void readyToGame(UUID userId, UUID gameRoomId);
 }

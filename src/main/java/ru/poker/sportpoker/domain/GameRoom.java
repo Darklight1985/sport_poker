@@ -1,6 +1,5 @@
 package ru.poker.sportpoker.domain;
 
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
