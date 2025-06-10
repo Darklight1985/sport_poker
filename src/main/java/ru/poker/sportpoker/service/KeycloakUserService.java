@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.AccessTokenResponse;
@@ -19,10 +20,11 @@ import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.config.KeycloakProperties;
 import ru.poker.sportpoker.dto.UserInfo;
 import ru.poker.sportpoker.exception.UserRegistrationException;
+import ru.poker.sportpoker.mapper.UserMapper;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -31,16 +33,10 @@ import java.util.UUID;
 public class KeycloakUserService {
 
     private final KeycloakProperties keycloakProperties;
+    private final UserMapper userMapper;
+    private final Keycloak keycloak;
 
     public void createUser(String username, String email, String password, String firstName, String lastName) {
-        try (Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keycloakProperties.getAuthServerUrl())
-                .realm(keycloakProperties.getRealm())
-                .clientId(keycloakProperties.getResource())
-                .clientSecret(keycloakProperties.getCredentials().getSecret())
-                .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
-                .build()) {
-
             UserRepresentation user = new UserRepresentation();
             user.setUsername(username);
             user.setEmail(email);
@@ -48,13 +44,13 @@ public class KeycloakUserService {
             user.setLastName(lastName);
             user.setEnabled(true);
 
-            UsersResource userResource = keycloak.realm(keycloakProperties.getRealm()).users();
+            RealmResource realm = keycloak.realm(keycloakProperties.getRealm());
+            UsersResource userResource = realm.users();
 
             try {
                 try (Response response = userResource.create(user)) {
                     if (response.getStatus() != 201) {
                         String error = response.readEntity(String.class);
-                        System.out.println(error);
                         throw new UserRegistrationException("Ошибка создания пользователя: " + error);
                     } else {
                         String userId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
@@ -63,14 +59,13 @@ public class KeycloakUserService {
                         passwordCred.setType(CredentialRepresentation.PASSWORD);
                         passwordCred.setValue(password);
 
-                        keycloak.realm(keycloakProperties.getRealm()).users().get(userId).resetPassword(passwordCred);
+                        userResource.get(userId).resetPassword(passwordCred);
                     }
                 }
             } catch (WebApplicationException ex) {
                 String error = ex.getResponse().readEntity(String.class);
                 throw new UserRegistrationException("Ошибка Keycloak: " + error);
             }
-        }
     }
 
     /**
@@ -79,60 +74,27 @@ public class KeycloakUserService {
      * @param userIds Список идентификаторов пользователей
      * @return Список с информацией о пользователях
      */
-    public List<UserInfo> getUsersInfo(Collection<UUID> userIds) {
-        List<UserInfo> list = new ArrayList<>();
-        try (Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keycloakProperties.getAuthServerUrl())
-                .realm(keycloakProperties.getRealm())
-                .clientId(keycloakProperties.getResource())
-                .clientSecret(keycloakProperties.getCredentials().getSecret())
-                .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
-                .build()) {
-
+    public Set<UserInfo> getUsersInfo(Collection<UUID> userIds) {
+        Set<UserInfo> list = new HashSet<>();
             UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
 
             for (UUID userId : userIds) {
                 UserResource userResource = usersResource.get(String.valueOf(userId));
                 UserRepresentation userRepresentation = userResource.toRepresentation();
-
-                UserInfo userInfo = UserInfo.builder()
-                        .ready(false)
-                        .userId(userId)
-                        .lastName(userRepresentation.getLastName())
-                        .firstName(userRepresentation.getFirstName())
-                        .username(userRepresentation.getUsername())
-                        .email(userRepresentation.getEmail())
-                        .build();
+                UserInfo userInfo = userMapper.getUserInfo(userRepresentation);
 
                 list.add(userInfo);
             }
-        }
         return list;
     }
 
 
     public UserInfo getUserInfo(UUID userId) {
-        try (Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keycloakProperties.getAuthServerUrl())
-                .realm(keycloakProperties.getRealm())
-                .clientId(keycloakProperties.getResource())
-                .clientSecret(keycloakProperties.getCredentials().getSecret())
-                .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
-                .build()) {
-
             UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
             UserResource userResource = usersResource.get(String.valueOf(userId));
             UserRepresentation userRepresentation = userResource.toRepresentation();
 
-            return UserInfo.builder()
-                    .ready(false)
-                    .userId(userId)
-                    .lastName(userRepresentation.getLastName())
-                    .firstName(userRepresentation.getFirstName())
-                    .username(userRepresentation.getUsername())
-                    .email(userRepresentation.getEmail())
-                    .build();
-        }
+            return userMapper.getUserInfo(userRepresentation);
     }
 
     /**
@@ -140,7 +102,6 @@ public class KeycloakUserService {
      * @return Строку содержащую идентификатор текущего пользователя
      */
     public String getCurrentUser() {
-        // Получение текущей аутентификации
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Authentication authentication = securityContext.getAuthentication();
         if ("anonymousUser".equals(authentication.getPrincipal())) {
@@ -149,7 +110,6 @@ public class KeycloakUserService {
         JwtAuthenticationToken tokenA = (JwtAuthenticationToken) authentication;
         var atr = tokenA.getTokenAttributes();
 
-        // Получение идентификатора пользователя из claims
         String userId = (String) atr.get("sub");
         System.out.println("User ID: " + userId);
         return userId;
@@ -169,7 +129,6 @@ public class KeycloakUserService {
                     .username(username)
                     .password(password)
                     .build()) {
-
                 return keycloak.tokenManager().getAccessToken();
             }
         } catch (Exception e) {
