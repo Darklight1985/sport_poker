@@ -9,10 +9,7 @@ import ru.poker.sportpoker.dto.UserInfo;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,14 +22,16 @@ public class ActivityUsersService {
     private final GameRoomRepository gameRoomRepository;
     private final KeycloakUserService keycloakUserService;
 
-    private static final Map<UUID, List<UserInfo>> roomPlayersReadyToGame = new ConcurrentHashMap<>();
+    private static final Map<UUID, Set<UserInfo>> roomPlayersReadyToGame = new ConcurrentHashMap<>();
     private static final Lock lock = new ReentrantLock();
 
     @PostConstruct
     public void init() {
         List<GameRoom> rooms = gameRoomRepository.findGameRoomByStatusEquals(StatusGame.PREP);
         for (GameRoom room : rooms) {
-            List<UserInfo> userInfoList = keycloakUserService.getUsersInfo(room.getPlayers());
+            Set<UserInfo> userInfoList = keycloakUserService.getUsersInfo(room.getPlayers());
+            UserInfo userInfo = keycloakUserService.getUserInfo(room.getCreator());
+            userInfoList.add(userInfo);
             lock.lock();
             try {
                 roomPlayersReadyToGame.put(room.getId(), userInfoList);
@@ -43,7 +42,7 @@ public class ActivityUsersService {
     }
 
     public boolean setReadyToGame(UUID roomId, UUID userId) {
-        List<UserInfo> userInfoList = roomPlayersReadyToGame.get(roomId);
+        Set<UserInfo> userInfoList = roomPlayersReadyToGame.get(roomId);
         if (userInfoList == null) {
             return false;
         }
@@ -66,9 +65,9 @@ public class ActivityUsersService {
     }
 
     public void joinRoom(UUID roomId, UUID userId) {
-        List<UserInfo> userInfoList = roomPlayersReadyToGame.get(roomId);
+        Set<UserInfo> userInfoList = roomPlayersReadyToGame.get(roomId);
         if (userInfoList == null) {
-            userInfoList = new ArrayList<>();
+            userInfoList = new HashSet<>();
             lock.lock();
             try {
                 roomPlayersReadyToGame.put(roomId, userInfoList);

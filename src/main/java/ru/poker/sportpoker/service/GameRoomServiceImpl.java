@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.dto.UserInfo;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 
@@ -51,8 +52,14 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public GameRoom getGameRoom(UUID id) {
-        return gameRoomRepository.findById(id)
+        GameRoom gameRoom = gameRoomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id.toString()));
+        Set<UUID> playersId = gameRoom.getPlayers();
+        UUID creatorId = gameRoom.getCreator();
+        UserInfo creatorInfo = keycloakUserService.getUserInfo(creatorId);
+        Set<UserInfo> playersInfo = keycloakUserService.getUsersInfo(playersId);
+
+        return gameRoom;
     }
 
     @Override
@@ -117,12 +124,31 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
-    public void readyToGame(UUID userId, UUID gameRoomId) {
-        boolean readyToGame = activityUsersService.setReadyToGame(gameRoomId, userId);
+    public boolean readyToGame(UUID gameRoomId) {
+        String userId = keycloakUserService.getCurrentUser();
+        boolean readyToGame = activityUsersService.setReadyToGame(gameRoomId, UUID.fromString(userId));
         if (readyToGame) {
             GameRoom gameRoomOld = gameRoomRepository.findById(gameRoomId)
                     .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
             gameRoomOld.setStatus(StatusGame.PLAY);
         }
+        return readyToGame;
+    }
+
+    @Override
+    public void leftRoom(UUID gameRoomId) {
+        GameRoom gameRoomOld = gameRoomRepository.findById(gameRoomId)
+                .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
+        String userId = keycloakUserService.getCurrentUser();
+        gameRoomOld.removePlayer(UUID.fromString(userId));
+        gameRoomRepository.save(gameRoomOld);
+    }
+
+    @Override
+    public void kickFromRoom(UUID gameRoomId, UUID playerId) {
+        GameRoom gameRoomOld = gameRoomRepository.findById(gameRoomId)
+                .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
+        gameRoomOld.removePlayer(playerId);
+        gameRoomRepository.save(gameRoomOld);
     }
 }

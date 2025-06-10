@@ -28,8 +28,11 @@ public interface GameRoomService {
     /**
      * Метод указывает что игрок готов к игре в своей комнате
      *
-     * @param userId Идентификатор пользователя
      * @param gameRoomId Идентификатор игровой комнаты
      */
-    void readyToGame(UUID userId, UUID gameRoomId);
+    boolean readyToGame(UUID gameRoomId);
+
+    void leftRoom(UUID gameRoomId);
+
+    void kickFromRoom(UUID gameRoomId, UUID playerId);
 }

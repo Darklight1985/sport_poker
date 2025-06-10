@@ -19,11 +19,9 @@ import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.config.KeycloakProperties;
 import ru.poker.sportpoker.dto.UserInfo;
 import ru.poker.sportpoker.exception.UserRegistrationException;
+import ru.poker.sportpoker.mapper.UserMapper;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 
 @Service
@@ -31,6 +29,7 @@ import java.util.UUID;
 public class KeycloakUserService {
 
     private final KeycloakProperties keycloakProperties;
+    private final UserMapper userMapper;
 
     public void createUser(String username, String email, String password, String firstName, String lastName) {
         try (Keycloak keycloak = KeycloakBuilder.builder()
@@ -79,8 +78,8 @@ public class KeycloakUserService {
      * @param userIds Список идентификаторов пользователей
      * @return Список с информацией о пользователях
      */
-    public List<UserInfo> getUsersInfo(Collection<UUID> userIds) {
-        List<UserInfo> list = new ArrayList<>();
+    public Set<UserInfo> getUsersInfo(Collection<UUID> userIds) {
+        Set<UserInfo> list = new HashSet<>();
         try (Keycloak keycloak = KeycloakBuilder.builder()
                 .serverUrl(keycloakProperties.getAuthServerUrl())
                 .realm(keycloakProperties.getRealm())
@@ -94,15 +93,7 @@ public class KeycloakUserService {
             for (UUID userId : userIds) {
                 UserResource userResource = usersResource.get(String.valueOf(userId));
                 UserRepresentation userRepresentation = userResource.toRepresentation();
-
-                UserInfo userInfo = UserInfo.builder()
-                        .ready(false)
-                        .userId(userId)
-                        .lastName(userRepresentation.getLastName())
-                        .firstName(userRepresentation.getFirstName())
-                        .username(userRepresentation.getUsername())
-                        .email(userRepresentation.getEmail())
-                        .build();
+                UserInfo userInfo = userMapper.getUserInfo(userRepresentation);
 
                 list.add(userInfo);
             }
@@ -124,14 +115,7 @@ public class KeycloakUserService {
             UserResource userResource = usersResource.get(String.valueOf(userId));
             UserRepresentation userRepresentation = userResource.toRepresentation();
 
-            return UserInfo.builder()
-                    .ready(false)
-                    .userId(userId)
-                    .lastName(userRepresentation.getLastName())
-                    .firstName(userRepresentation.getFirstName())
-                    .username(userRepresentation.getUsername())
-                    .email(userRepresentation.getEmail())
-                    .build();
+            return userMapper.getUserInfo(userRepresentation);
         }
     }
 

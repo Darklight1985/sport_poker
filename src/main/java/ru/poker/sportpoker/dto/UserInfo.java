@@ -1,25 +1,19 @@
 package ru.poker.sportpoker.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
-@Builder
-public class UserInfo {
-
-    private UUID userId;
-
-    private String username;
+@SuperBuilder
+public class UserInfo extends UserShortInfo {
 
     private String email;
 
     private String firstName;
 
     private String lastName;
-
-    private boolean ready = false;
 }

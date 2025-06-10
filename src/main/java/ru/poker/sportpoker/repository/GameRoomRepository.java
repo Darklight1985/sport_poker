@@ -17,5 +17,10 @@ public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
             """)
     Optional<GameRoom> findGameRoomWithPlayers(UUID roomId);
 
+    @Query(value = """
+            select gr from GameRoom gr
+            left join fetch gr.players
+            where gr.status = :statusGame
+            """)
     List<GameRoom> findGameRoomByStatusEquals(StatusGame statusGame);
 }

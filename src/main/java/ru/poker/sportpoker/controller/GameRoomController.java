@@ -67,4 +67,10 @@ public class GameRoomController {
         gameRoomService.deleteGameRoom(id);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+    @Operation(description = "Принятие от игрока готовности к игре")
+    @PostMapping("/{id}/ready")
+    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(gameRoomService.readyToGame(id));
+    }
 }
