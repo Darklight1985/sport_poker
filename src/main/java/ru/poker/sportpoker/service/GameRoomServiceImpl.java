@@ -12,10 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
-import ru.poker.sportpoker.dto.CreateGameRoomDto;
-import ru.poker.sportpoker.dto.UpdateGameRoomDto;
-import ru.poker.sportpoker.dto.UserInfo;
+import ru.poker.sportpoker.dto.*;
 import ru.poker.sportpoker.enums.StatusGame;
+import ru.poker.sportpoker.mapper.RoomMapper;
+import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 
 import java.nio.charset.StandardCharsets;
@@ -31,6 +31,8 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final GameRoomRepository gameRoomRepository;
     private final KeycloakUserService keycloakUserService;
     private final ActivityUsersService activityUsersService;
+    private final UserMapper userMapper;
+    private final RoomMapper roomMapper;
 
     private static final String SECRET_KEY = "my-super-secret-key-which-is-32bytes";
 
@@ -51,15 +53,26 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
-    public GameRoom getGameRoom(UUID id) {
-        GameRoom gameRoom = gameRoomRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(id.toString()));
+    public GameRoomView getGameRoom(UUID id) {
+        GameRoom gameRoom = activityUsersService.getActiveRoom(id);
+        if (gameRoom == null) {
+            gameRoom = gameRoomRepository.findGameRoomWithPlayers(id)
+                    .orElseThrow(() -> new NotFoundException(id.toString()));
+        }
         Set<UUID> playersId = gameRoom.getPlayers();
         UUID creatorId = gameRoom.getCreator();
-        UserInfo creatorInfo = keycloakUserService.getUserInfo(creatorId);
-        Set<UserInfo> playersInfo = keycloakUserService.getUsersInfo(playersId);
+        UserShortInfo creatorInfo = userMapper.getUserShortInfo(keycloakUserService.getUserInfo(creatorId));
+        Set<UserShortInfo> playersInfo = userMapper.getUserShortInfoList(keycloakUserService.getUsersInfo(playersId));
+        return roomMapper.getView(gameRoom, creatorInfo, playersInfo);
+    }
 
-        return gameRoom;
+    @Override
+    @Transactional
+    public List<GameRoomView> getGameRooms() {
+        List<GameRoom> gameRooms = (List<GameRoom>) gameRoomRepository.findAll();
+        List<GameRoomView> gameRoomViews = new ArrayList<>();
+        gameRooms.forEach(gameRoom -> gameRoomViews.add(getGameRoom(gameRoom.getId())));
+        return gameRoomViews;
     }
 
     @Override
@@ -127,10 +140,13 @@ public class GameRoomServiceImpl implements GameRoomService {
     public boolean readyToGame(UUID gameRoomId) {
         String userId = keycloakUserService.getCurrentUser();
         boolean readyToGame = activityUsersService.setReadyToGame(gameRoomId, UUID.fromString(userId));
+        GameRoom gameRoomOld;
         if (readyToGame) {
-            GameRoom gameRoomOld = gameRoomRepository.findById(gameRoomId)
+            gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(gameRoomId)
                     .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
             gameRoomOld.setStatus(StatusGame.PLAY);
+            gameRoomRepository.save(gameRoomOld);
+            activityUsersService.activeRoom(gameRoomOld);
         }
         return readyToGame;
     }

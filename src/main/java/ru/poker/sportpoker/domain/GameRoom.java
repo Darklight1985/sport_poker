@@ -3,15 +3,20 @@ package ru.poker.sportpoker.domain;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.*;
 import ru.poker.sportpoker.enums.StatusGame;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Entity
 @Getter
 @Setter
+@Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "game_room")
@@ -20,8 +25,8 @@ public class GameRoom {
     @Transient
     private CountDownTimer countDownTimer;
 
-    public void letsPlay(int time) {
-        countDownTimer = new CountDownTimer(time);
+    public void letsPlay() {
+        countDownTimer = new CountDownTimer(gameTime);
         status = StatusGame.PLAY;
     }
 
@@ -53,6 +58,11 @@ public class GameRoom {
     private String name;
 
     /**
+     * Длительность игры в минутах
+     */
+    private Integer gameTime;
+
+    /**
      * Статус комнаты
      */
     @Enumerated(EnumType.STRING)
@@ -78,4 +88,27 @@ public class GameRoom {
     public void clearPlayers() {
         players.clear();
     }
+
+
+    @Getter
+    @Setter
+    public class CountDownTimer {
+        private int minutesLeft;
+        private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        public CountDownTimer(int seconds) {
+            this.minutesLeft = seconds;
+            scheduler.scheduleAtFixedRate(this::tick, 1, 1, TimeUnit.SECONDS);
+        }
+
+        private void tick() {
+            if (minutesLeft > 0) {
+                minutesLeft--;
+                log.debug("В комнате {} времени осталось - {} минут", name, minutesLeft);
+            } else {
+                scheduler.shutdown();
+            }
+        }
+    }
+
 }

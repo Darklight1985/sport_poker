@@ -3,8 +3,10 @@ package ru.poker.sportpoker.service;
 import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface GameRoomService {
@@ -15,7 +17,9 @@ public interface GameRoomService {
      */
     void createGameRoom(CreateGameRoomDto dto);
 
-    GameRoom getGameRoom(UUID id);
+    GameRoomView getGameRoom(UUID id);
+
+    List<GameRoomView> getGameRooms();
 
     void updateGameRoom(UpdateGameRoomDto dto);
 

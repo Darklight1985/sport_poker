@@ -8,9 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.service.GameRoomService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,7 +26,7 @@ public class GameRoomController {
     @PutMapping("/start")
     public String adminEndpoint() {
         GameRoom room = new GameRoom();
-        room.letsPlay(100);
+        room.letsPlay();
         return "Game room started";
     }
 
@@ -44,10 +46,18 @@ public class GameRoomController {
 
     @Operation(description = "Получение данных об игровой комнате")
     @GetMapping("/{id}")
-    public ResponseEntity<Void> getGameRoom(@PathVariable UUID id) {
-        gameRoomService.getGameRoom(id);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<GameRoomView> getGameRoom(@PathVariable UUID id) {
+        GameRoomView gameRoomView = gameRoomService.getGameRoom(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(gameRoomView);
     }
+
+    @Operation(description = "Получение данных об игровых комнатах")
+    @GetMapping("")
+    public ResponseEntity<List<GameRoomView>> getGameRooms() {
+        List<GameRoomView> gameRoomViews = gameRoomService.getGameRooms();
+        return ResponseEntity.status(HttpStatus.CREATED).body(gameRoomViews);
+    }
+
 
     @Operation(description = "Генерация ссылки для входа в игровую комнату")
     @GetMapping("/{id}/link")

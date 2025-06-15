@@ -32,10 +32,9 @@ public class RegistrationController {
 
     @Operation(description = "Вход в приложение")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Parameter(description = "Никнейм пользователя") @RequestParam String username,
-                                   @Parameter(description = "Пароль пользователя") @RequestParam String password) {
+    public ResponseEntity<?> login(@RequestBody UserRegistrationDto dto) {
         try {
-            AccessTokenResponse tokenResponse = keycloakUserService.authenticate(username, password);
+            AccessTokenResponse tokenResponse = keycloakUserService.authenticate(dto.getUsername(), dto.getPassword());
             return ResponseEntity.ok(tokenResponse);
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid username or password");

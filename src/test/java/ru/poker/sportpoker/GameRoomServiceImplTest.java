@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.ActivityUsersService;
 import ru.poker.sportpoker.service.GameRoomServiceImpl;
@@ -38,13 +39,16 @@ public class GameRoomServiceImplTest {
     @Mock
     private ActivityUsersService activityUsersService;
 
+    @Mock
+    private UserMapper userMapper;
+
     @InjectMocks
     private GameRoomServiceImpl gameRoomService;
 
     @BeforeAll
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        gameRoomService = new GameRoomServiceImpl(gameRoomRepository, keycloakUserService, activityUsersService);
+        gameRoomService = new GameRoomServiceImpl(gameRoomRepository, keycloakUserService, activityUsersService, userMapper);
     }
 
     @Test

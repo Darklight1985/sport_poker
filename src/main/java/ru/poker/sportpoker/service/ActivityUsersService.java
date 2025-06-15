@@ -23,6 +23,7 @@ public class ActivityUsersService {
     private final KeycloakUserService keycloakUserService;
 
     private static final Map<UUID, Set<UserInfo>> roomPlayersReadyToGame = new ConcurrentHashMap<>();
+    private static final Map<UUID, GameRoom> activeRoom = new ConcurrentHashMap<>();
     private static final Lock lock = new ReentrantLock();
 
     @PostConstruct
@@ -82,6 +83,15 @@ public class ActivityUsersService {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void activeRoom(GameRoom gameRoom) {
+        gameRoom.letsPlay();
+        activeRoom.put(gameRoom.getId(), gameRoom);
+    }
+
+    public GameRoom getActiveRoom(UUID roomId) {
+        return activeRoom.get(roomId);
     }
 
 }
