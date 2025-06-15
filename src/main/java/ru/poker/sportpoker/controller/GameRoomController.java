@@ -26,7 +26,6 @@ public class GameRoomController {
     @PutMapping("/start")
     public String adminEndpoint() {
         GameRoom room = new GameRoom();
-        room.letsPlay();
         return "Game room started";
     }
 

@@ -5,7 +5,9 @@ import jakarta.persistence.Table;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.*;
+import org.springframework.context.ApplicationEventPublisher;
 import ru.poker.sportpoker.enums.StatusGame;
+import ru.poker.sportpoker.event.GameEndEvent;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,8 +27,8 @@ public class GameRoom {
     @Transient
     private CountDownTimer countDownTimer;
 
-    public void letsPlay() {
-        countDownTimer = new CountDownTimer(gameTime);
+    public void letsPlay(ApplicationEventPublisher publisher) {
+        countDownTimer = new CountDownTimer(gameTime, publisher);
         status = StatusGame.PLAY;
     }
 
@@ -95,9 +97,11 @@ public class GameRoom {
     public class CountDownTimer {
         private int minutesLeft;
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        private final ApplicationEventPublisher eventPublisher;
 
-        public CountDownTimer(int seconds) {
+        public CountDownTimer(int seconds, ApplicationEventPublisher eventPublisher) {
             this.minutesLeft = seconds;
+            this.eventPublisher = eventPublisher;
             scheduler.scheduleAtFixedRate(this::tick, 1, 1, TimeUnit.SECONDS);
         }
 
@@ -106,6 +110,7 @@ public class GameRoom {
                 minutesLeft--;
                 log.debug("В комнате {} времени осталось - {} минут", name, minutesLeft);
             } else {
+                eventPublisher.publishEvent(new GameEndEvent(id));
                 scheduler.shutdown();
             }
         }

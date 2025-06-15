@@ -3,10 +3,14 @@ package ru.poker.sportpoker.service;
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.UserInfo;
 import ru.poker.sportpoker.enums.StatusGame;
+import ru.poker.sportpoker.event.GameEndEvent;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 
 import java.util.*;
@@ -17,10 +21,12 @@ import java.util.concurrent.locks.ReentrantLock;
 @AllArgsConstructor
 @Service
 @Data
+@Slf4j
 public class ActivityUsersService {
 
     private final GameRoomRepository gameRoomRepository;
     private final KeycloakUserService keycloakUserService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final Map<UUID, Set<UserInfo>> roomPlayersReadyToGame = new ConcurrentHashMap<>();
     private static final Map<UUID, GameRoom> activeRoom = new ConcurrentHashMap<>();
@@ -86,7 +92,7 @@ public class ActivityUsersService {
     }
 
     public void activeRoom(GameRoom gameRoom) {
-        gameRoom.letsPlay();
+        gameRoom.letsPlay(eventPublisher);
         activeRoom.put(gameRoom.getId(), gameRoom);
     }
 
@@ -94,4 +100,14 @@ public class ActivityUsersService {
         return activeRoom.get(roomId);
     }
 
+    @EventListener
+    public void endGame(GameEndEvent event) {
+        GameRoom gameRoom = activeRoom.get(event.getRoomId());
+        if (gameRoom != null) {
+            log.debug("Игра в комнате {} окончена", gameRoom.getName());
+            gameRoom.setStatus(StatusGame.END);
+            activeRoom.remove(event.getRoomId());
+            gameRoomRepository.save(gameRoom);
+        }
+    }
 }

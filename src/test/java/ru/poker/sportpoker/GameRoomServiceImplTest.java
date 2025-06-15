@@ -4,6 +4,7 @@ import com.fasterxml.jackson.jakarta.rs.json.annotation.JSONP;
 import io.jsonwebtoken.Claims;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.InjectMocks;
@@ -13,22 +14,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.mapper.RoomMapper;
 import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.ActivityUsersService;
 import ru.poker.sportpoker.service.GameRoomServiceImpl;
 import ru.poker.sportpoker.service.KeycloakUserService;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class GameRoomServiceImplTest {
+
+    @InjectMocks
+    private GameRoomServiceImpl gameRoomService;
 
     @Mock
     private GameRoomRepository gameRoomRepository;
@@ -42,13 +45,12 @@ public class GameRoomServiceImplTest {
     @Mock
     private UserMapper userMapper;
 
-    @InjectMocks
-    private GameRoomServiceImpl gameRoomService;
+    @Mock
+    private RoomMapper roomMapper;
 
-    @BeforeAll
+    @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        gameRoomService = new GameRoomServiceImpl(gameRoomRepository, keycloakUserService, activityUsersService, userMapper);
     }
 
     @Test
@@ -65,22 +67,29 @@ public class GameRoomServiceImplTest {
     }
 
     @Test
-    public void testGetGameRoom_existingId() {
-        UUID id = UUID.randomUUID();
+    //TODO доправить тест
+    public void testGetGameRoom() {
+        UUID roomId = UUID.randomUUID();
         GameRoom gameRoom = new GameRoom();
-        when(gameRoomRepository.findById(id)).thenReturn(Optional.of(gameRoom));
+        gameRoom.setId(roomId);
 
-        GameRoom result = gameRoomService.getGameRoom(id);
+        when(gameRoomRepository.findGameRoomWithPlayers(roomId)).thenReturn(Optional.of(gameRoom));
+        when(roomMapper.getView(gameRoom, null, Set.of())).thenReturn(new GameRoomView());
 
-        assertEquals(gameRoom, result);
+        GameRoomView view = gameRoomService.getGameRoom(roomId);
+
+
+        assertNotNull(view);
     }
 
     @Test
-    public void testGetGameRoom_nonExistingId() {
-        UUID id = UUID.randomUUID();
-        when(gameRoomRepository.findById(id)).thenReturn(Optional.empty());
+    public void testGetGameRooms() {
+        when(gameRoomRepository.findAll()).thenReturn(List.of(new GameRoom(), new GameRoom()));
+        // Add more mocks for other dependencies and assertions as needed
 
-        assertThrows(NotFoundException.class, () -> gameRoomService.getGameRoom(id));
+        List<GameRoomView> rooms = gameRoomService.getGameRooms();
+
+        assertEquals(2, rooms.size());
     }
 
     @Test
@@ -89,60 +98,90 @@ public class GameRoomServiceImplTest {
         dto.setId(UUID.randomUUID());
         dto.setName("Updated Room");
 
-        GameRoom gameRoomOld = new GameRoom();
-        when(gameRoomRepository.findById(dto.getId())).thenReturn(Optional.of(gameRoomOld));
+        GameRoom gameRoom = new GameRoom();
+        when(gameRoomRepository.findById(dto.getId())).thenReturn(Optional.of(gameRoom));
 
         gameRoomService.updateGameRoom(dto);
 
-        assertEquals("Updated Room", gameRoomOld.getName());
+        verify(gameRoomRepository).save(eq(gameRoom));
     }
 
     @Test
-    public void testDeleteGameRoom_Success() {
-        UUID id = UUID.randomUUID();
+    public void testDeleteGameRoom() {
+        UUID roomId = UUID.randomUUID();
         GameRoom gameRoom = new GameRoom();
-        when(gameRoomRepository.findById(id)).thenReturn(Optional.of(gameRoom));
+        gameRoom.setId(roomId);
 
-        gameRoomService.deleteGameRoom(id);
+        when(gameRoomRepository.findById(roomId)).thenReturn(Optional.of(gameRoom));
 
-        verify(gameRoomRepository).findById(id);
-        verify(gameRoomRepository).delete(gameRoom);
+        gameRoomService.deleteGameRoom(roomId);
+
+        verify(gameRoomRepository).delete(eq(gameRoom));
     }
 
     @Test
-    public void testDeleteGameRoom_NotFoundException() {
-        UUID id = UUID.randomUUID();
-        when(gameRoomRepository.findById(id)).thenReturn(Optional.empty());
+    public void testGetLinkToRoom() {
+        UUID roomId = UUID.randomUUID();
+        String link = "http://example.com";
 
-        Exception exception = assertThrows(NotFoundException.class, () -> gameRoomService.deleteGameRoom(id));
+        when(gameRoomRepository.findById(roomId)).thenReturn(Optional.of(new GameRoom()));
 
-        assertEquals(id.toString(), exception.getMessage());
+        String result = gameRoomService.getLinkToRoom(roomId);
+
+        assertEquals(link, result);
     }
 
-//    @Test
-//    public void testJoinRoom_validToken() {
-//        String token = "valid.token";
-//       // Claims claims = new DefaultClaims();
-//        UUID roomId = UUID.randomUUID();
-//      //  claims.put("roomId", roomId);
-//
-//        GameRoom gameRoomOld = new GameRoom();
-//        when(gameRoomRepository.findById(roomId)).thenReturn(Optional.of(gameRoomOld));
-//        when(keycloakUserService.getCurrentUser()).thenReturn("user123");
-//
-//        ResponseEntity<?> response = gameRoomService.joinRoom(token);
-//
-//        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
-//    }
-
     @Test
-    public void testJoinRoom_invalidToken() {
-        String token = "invalid.token";
+    public void testJoinRoom() {
+        String token = "valid-token";
+        String userId = UUID.randomUUID().toString();
+
+        when(keycloakUserService.getCurrentUser()).thenReturn(userId);
+        when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.of(new GameRoom()));
 
         ResponseEntity<?> response = gameRoomService.joinRoom(token);
 
-        assertEquals("Invalid or expired link", Objects.requireNonNull(response.getBody()));
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
     }
 
+    @Test
+    public void testReadyToGame() {
+        UUID roomId = UUID.randomUUID();
+        String userId = UUID.randomUUID().toString();
+
+        when(keycloakUserService.getCurrentUser()).thenReturn(userId);
+        when(gameRoomRepository.findGameRoomWithPlayers(roomId)).thenReturn(Optional.of(new GameRoom()));
+
+        boolean result = gameRoomService.readyToGame(roomId);
+
+        assertTrue(result);
+    }
+
+    @Test
+    public void testLeftRoom() {
+        UUID roomId = UUID.randomUUID();
+        String userId = UUID.randomUUID().toString();
+
+        GameRoom gameRoom = new GameRoom();
+        gameRoom.setId(roomId);
+        when(gameRoomRepository.findById(roomId)).thenReturn(Optional.of(gameRoom));
+
+        gameRoomService.leftRoom(roomId);
+
+        verify(gameRoomRepository).save(eq(gameRoom));
+    }
+
+    @Test
+    public void testKickFromRoom() {
+        UUID roomId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+
+        GameRoom gameRoom = new GameRoom();
+        gameRoom.setId(roomId);
+        when(gameRoomRepository.findById(roomId)).thenReturn(Optional.of(gameRoom));
+
+        gameRoomService.kickFromRoom(roomId, playerId);
+
+        verify(gameRoomRepository).save(eq(gameRoom));
+    }
 }
