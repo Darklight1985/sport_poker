@@ -10,8 +10,6 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "spring.profiles.active=test")
 class SportPokerApplicationTests {
 
- //   @Mock
-  //  private GameRoomRepository gameRoomRepository;
 
     @Test
     void contextLoads() {

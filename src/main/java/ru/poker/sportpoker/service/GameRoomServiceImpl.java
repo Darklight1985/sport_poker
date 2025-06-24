@@ -48,6 +48,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         String userId = keycloakUserService.getCurrentUser();
         GameRoom gameRoom = new GameRoom();
         gameRoom.setName(dto.getName());
+        gameRoom.setGameTime(dto.getGameTime());
         gameRoom.setCreator(UUID.fromString(userId));
         gameRoomRepository.save(gameRoom);
     }

@@ -13,4 +13,7 @@ public class CreateGameRoomDto {
 
     @Schema(description = "Название игровой комнаты")
     private String name;
+
+    @Schema(description = "Время игры")
+    private Integer gameTime;
 }
