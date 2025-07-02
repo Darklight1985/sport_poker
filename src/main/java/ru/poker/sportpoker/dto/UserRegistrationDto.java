@@ -17,4 +17,10 @@ public class UserRegistrationDto {
 
     @Schema(description = "Пароль нового пользователя")
     private String password;
+
+    @Schema(description = "Имя")
+    private String firstName;
+
+    @Schema(description = "Фамилия")
+    private String lastName;
 }
