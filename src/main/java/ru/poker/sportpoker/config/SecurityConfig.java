@@ -58,7 +58,8 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*") // ваш фронт
+                        .allowedHeaders("*")
+                        .allowedOrigins("*")
                         .allowedMethods("*");
             }
         };

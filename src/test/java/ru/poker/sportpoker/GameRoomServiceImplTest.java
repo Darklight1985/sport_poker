@@ -345,7 +345,7 @@ public class GameRoomServiceImplTest {
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-    @DisplayName("При запросе данных о комнате:")
+    @DisplayName("При выполнении запроса выкинуть пользователя из комнаты:")
     class KickFromRoomTest {
         @Test
         @DisplayName(" если пользователь есть в комнате, то запрос будет успешен.")

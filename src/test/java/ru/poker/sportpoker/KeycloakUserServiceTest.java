@@ -2,6 +2,8 @@ package ru.poker.sportpoker;
 
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,6 +82,7 @@ public class KeycloakUserServiceTest {
 
     private static Keycloak keycloak1 = mock(Keycloak.class);
     private static KeycloakBuilder keycloakBuilder = mock(KeycloakBuilder.class);
+
     static {
         try (MockedStatic<KeycloakBuilder> mockedStatic = mockStatic(KeycloakBuilder.class)) {
             mockedStatic.when(KeycloakBuilder::builder).thenReturn(keycloakBuilder);
@@ -96,8 +99,13 @@ public class KeycloakUserServiceTest {
         keycloakUserService = new KeycloakUserService(keycloakProperties, userMapper, keycloak);
     }
 
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+    @DisplayName("При регистрации нового пользователя :")
+    class RegistrationUserTest {
 
     @Test
+    @DisplayName(" если пользователь новый, то регистрация пройдет успешно. ")
     public void testCreateUser_Success() {
         String username = "testuser";
         String email = "test@example.com";
@@ -122,61 +130,78 @@ public class KeycloakUserServiceTest {
         keycloakUserService.createUser(username, email, password, firstName, lastName);
         verify(userResource).resetPassword(any());
     }
+}
 
-    @Test
-    public void testGetUsersInfo_Success() {
-        Collection<UUID> userIds = Set.of(USER_ID, USER_ID_2);
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+    @DisplayName("При получении информации о пользователях :")
+    class GetUsersInfoTest {
 
-        when(keycloakProperties.getRealm()).thenReturn("keycloak");
-        when(keycloak.realm(anyString())).thenReturn(mockRealm);
-        when(mockRealm.users()).thenReturn(mockUsersResource);
-        when(mockUsersResource.get(String.valueOf(USER_ID))).thenReturn(userResource);
-        when(mockUsersResource.get(String.valueOf(USER_ID_2))).thenReturn(userResource2);
-        when(userResource.toRepresentation()).thenReturn(userRepresentation1);
-        when(userResource2.toRepresentation()).thenReturn(userRepresentation2);
+        @Test
+        @DisplayName(" если указать идентификаторы пользователей, то получим всю информацию по ним")
+        public void testGetUsersInfo_Success() {
+            Collection<UUID> userIds = Set.of(USER_ID, USER_ID_2);
 
-        Set<UserInfo> result = keycloakUserService.getUsersInfo(userIds);
+            when(keycloakProperties.getRealm()).thenReturn("keycloak");
+            when(keycloak.realm(anyString())).thenReturn(mockRealm);
+            when(mockRealm.users()).thenReturn(mockUsersResource);
+            when(mockUsersResource.get(String.valueOf(USER_ID))).thenReturn(userResource);
+            when(mockUsersResource.get(String.valueOf(USER_ID_2))).thenReturn(userResource2);
+            when(userResource.toRepresentation()).thenReturn(userRepresentation1);
+            when(userResource2.toRepresentation()).thenReturn(userRepresentation2);
 
+            Set<UserInfo> result = keycloakUserService.getUsersInfo(userIds);
 
-        assertEquals(2, result.size());
-        UserInfo userInfo = result.stream().filter(u -> u.getUserId().equals(USER_ID)).findFirst().get();
-        UserInfo userInfo2 = result.stream().filter(u -> u.getUserId().equals(USER_ID_2)).findFirst().get();
+            assertEquals(2, result.size());
+            UserInfo userInfo = result.stream().filter(u -> u.getUserId().equals(USER_ID)).findFirst().get();
+            UserInfo userInfo2 = result.stream().filter(u -> u.getUserId().equals(USER_ID_2)).findFirst().get();
 
-        assertEquals(userInfo.getEmail(), email1);
-        assertEquals(userInfo2.getEmail(), email2);
-        assertEquals(userInfo.getFirstName(), firstName1);
-        assertEquals(userInfo2.getLastName(), lastName2);
+            assertEquals(userInfo.getEmail(), email1);
+            assertEquals(userInfo2.getEmail(), email2);
+            assertEquals(userInfo.getFirstName(), firstName1);
+            assertEquals(userInfo2.getLastName(), lastName2);
+        }
     }
 
-    @Test
-    public void testGetUserInfo_Success() {
-        when(keycloakProperties.getRealm()).thenReturn("keycloak");
-        when(keycloak.realm(anyString())).thenReturn(mockRealm);
-        when(mockRealm.users()).thenReturn(mockUsersResource);
-        when(mockUsersResource.get(String.valueOf(USER_ID))).thenReturn(userResource);
-        when(userResource.toRepresentation()).thenReturn(userRepresentation1);
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+    @DisplayName("При получении информации о пользователе :")
+    class GetUserInfoTest {
+        @Test
+        public void testGetUserInfo_Success() {
+            when(keycloakProperties.getRealm()).thenReturn("keycloak");
+            when(keycloak.realm(anyString())).thenReturn(mockRealm);
+            when(mockRealm.users()).thenReturn(mockUsersResource);
+            when(mockUsersResource.get(String.valueOf(USER_ID))).thenReturn(userResource);
+            when(userResource.toRepresentation()).thenReturn(userRepresentation1);
 
-        UserInfo result = keycloakUserService.getUserInfo(USER_ID);
+            UserInfo result = keycloakUserService.getUserInfo(USER_ID);
 
-        assertEquals(result.getEmail(), email1);
-        assertEquals(result.getUsername(), username1);
-        assertEquals(result.getFirstName(), firstName1);
-        assertEquals(result.getLastName(), lastName1);
+            assertEquals(result.getEmail(), email1);
+            assertEquals(result.getUsername(), username1);
+            assertEquals(result.getFirstName(), firstName1);
+            assertEquals(result.getLastName(), lastName1);
+        }
     }
 
-    @Test
-    public void testGetCurrentUser_Authenticated() {
-        SecurityContext securityContext = mock(SecurityContext.class);
-        JwtAuthenticationToken tokenA = mock(JwtAuthenticationToken.class);
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+    @DisplayName("При получении идентификатор текущего пользователя :")
+    class GetCurrentUserTest {
+        @Test
+        public void testGetCurrentUser_Authenticated() {
+            SecurityContext securityContext = mock(SecurityContext.class);
+            JwtAuthenticationToken tokenA = mock(JwtAuthenticationToken.class);
 
-        when(securityContext.getAuthentication()).thenReturn(tokenA);
-        when(tokenA.getPrincipal()).thenReturn("user");
-        when(tokenA.getTokenAttributes()).thenReturn(Map.of("sub", "12345"));
-        SecurityContextHolder.setContext(securityContext);
+            when(securityContext.getAuthentication()).thenReturn(tokenA);
+            when(tokenA.getPrincipal()).thenReturn("user");
+            when(tokenA.getTokenAttributes()).thenReturn(Map.of("sub", "12345"));
+            SecurityContextHolder.setContext(securityContext);
 
-        String userId = keycloakUserService.getCurrentUser();
+            String userId = keycloakUserService.getCurrentUser();
 
-        assertEquals("12345", userId);
+            assertEquals("12345", userId);
+        }
     }
 }
 
