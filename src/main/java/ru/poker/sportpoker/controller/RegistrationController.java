@@ -6,6 +6,7 @@ import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.poker.sportpoker.dto.UserLoginDto;
 import ru.poker.sportpoker.dto.UserRegistrationDto;
 import ru.poker.sportpoker.service.KeycloakUserService;
 
@@ -32,7 +33,7 @@ public class RegistrationController {
 
     @Operation(description = "Вход в приложение")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserRegistrationDto dto) {
+    public ResponseEntity<?> login(@RequestBody UserLoginDto dto) {
         try {
             AccessTokenResponse tokenResponse = keycloakUserService.authenticate(dto.getUsername(), dto.getPassword());
             return ResponseEntity.ok(tokenResponse);

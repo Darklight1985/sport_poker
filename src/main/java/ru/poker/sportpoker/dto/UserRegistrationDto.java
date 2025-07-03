@@ -7,16 +7,10 @@ import lombok.Setter;
 @Schema(description = "ДТО, описывающий основные данные для регистрации нового пользователя")
 @Getter
 @Setter
-public class UserRegistrationDto {
-
-    @Schema(description = "Никнейм пользоватя")
-    private String username;
+public class UserRegistrationDto extends UserLoginDto {
 
     @Schema(description = "Почтовый ящик пользователя")
     private String email;
-
-    @Schema(description = "Пароль нового пользователя")
-    private String password;
 
     @Schema(description = "Имя")
     private String firstName;
