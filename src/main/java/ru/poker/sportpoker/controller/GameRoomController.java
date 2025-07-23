@@ -3,35 +3,46 @@ package ru.poker.sportpoker.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.service.GameRoomService;
+import ru.poker.sportpoker.validate.room.RoomValidator;
+import ru.poker.sportpoker.validate.ValidationException;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/api/room")
 public class GameRoomController {
 
     private final GameRoomService gameRoomService;
+    private final RoomValidator roomValidator;
 
     @Operation(description = "Создание игровой комнаты игроком")
     @PostMapping()
-    public ResponseEntity<Void> createGameRoom(@RequestBody CreateGameRoomDto dto) {
+    public ResponseEntity<Void> createGameRoom(@RequestBody CreateGameRoomDto dto, BindingResult bindingResult) {
+        roomValidator.validateCreateRoom(dto, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         gameRoomService.createGameRoom(dto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @Operation(description = "Обновление параметров игровой комнаты игроком")
     @PutMapping()
-    public ResponseEntity<Void> updateGameRoom(@RequestBody UpdateGameRoomDto dto) {
+    public ResponseEntity<Void> updateGameRoom(@RequestBody UpdateGameRoomDto dto, BindingResult bindingResult) {
+        roomValidator.validateUpdateGameRoom(dto, bindingResult);
         gameRoomService.updateGameRoom(dto);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
@@ -50,43 +61,46 @@ public class GameRoomController {
         return ResponseEntity.status(HttpStatus.CREATED).body(gameRoomViews);
     }
 
-
     @Operation(description = "Генерация ссылки для входа в игровую комнату")
     @GetMapping("/{id}/link")
-    public String getLinkRoom(@PathVariable UUID id) {
+    public String getLinkRoom(@PathVariable UUID id, BindingResult bindingResult) {
+        roomValidator.validateGenerateLinkToGameRoom(id, bindingResult);
         return gameRoomService.getLinkToRoom(id);
     }
 
     @Operation(description = "Вход в игровую комнату по токену")
     @PutMapping("/join/{token}")
-    public ResponseEntity<?> joinRoom(@Parameter(description = "Токен для входа в комнату по приглашению")@PathVariable String token) {
+    public ResponseEntity<?> joinRoom(@Parameter(description = "Токен для входа в комнату по приглашению")@PathVariable String token, BindingResult bindingResult) {
+        roomValidator.validateJoinRoom(token, bindingResult);
         return gameRoomService.joinRoom(token);
     }
 
     @Operation(description = "Удаление игровой комнаты")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteGameRoom(@Parameter(description = "Идентификатор комнаты") @PathVariable UUID id) {
+    public ResponseEntity<Void> deleteGameRoom(@Parameter(description = "Идентификатор комнаты") @PathVariable UUID id, BindingResult bindingResult) {
+        roomValidator.validateDeleteGameRoom(id, bindingResult);
         gameRoomService.deleteGameRoom(id);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @Operation(description = "Принятие от игрока готовности к игре")
     @PostMapping("/{id}/ready")
-    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id) {
+    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id, BindingResult bindingResult) {
+        roomValidator.validateReadyToGame(id, bindingResult);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(gameRoomService.readyToGame(id));
     }
 
     @Operation(description = "Покинуть игровую комнату")
     @PostMapping("/{id}/left")
-    public void leftRoom(@PathVariable UUID id) {
-        //TODO нужна проверка что пользователь в комнате и что комната не в активной фазе
+    public void leftRoom(@PathVariable UUID id, BindingResult bindingResult) {
+        roomValidator.validateLeftGameRoom(id, bindingResult);
         gameRoomService.leftRoom();
     }
 
     @Operation(description = "Удалить игрока из игровой комнаты")
     @PostMapping("/{id}/kick/{userId}")
-    public void kickRoom(@PathVariable UUID id, @PathVariable UUID userId) {
-        //TODO нужна проверка что тек пользователь админ а выкидываемый в той же комнате и комната не в активной фазе
+    public void kickRoom(@PathVariable UUID id, @PathVariable UUID userId, BindingResult bindingResult) {
+        roomValidator.validateKickPlayer(id, userId, bindingResult);
         gameRoomService.kickFromRoom(userId);
     }
 }

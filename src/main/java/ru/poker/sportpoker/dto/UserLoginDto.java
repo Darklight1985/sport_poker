@@ -7,7 +7,7 @@ import lombok.Setter;
 @Schema(description = "ДТО, описывающий основные данные для входа пользователя")
 @Getter
 @Setter
-public class UserLoginDto implements UserDto {
+public class UserLoginDto {
 
     @Schema(description = "Никнейм пользоватя")
     private String username;

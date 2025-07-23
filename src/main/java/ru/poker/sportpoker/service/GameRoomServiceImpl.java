@@ -4,13 +4,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
 import ru.poker.sportpoker.dto.*;
@@ -28,8 +28,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,9 +41,9 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final GameRoomPlayerRepository gameRoomPlayerRepository;
     private final UserMapper userMapper;
     private final RoomMapper roomMapper;
-    private final Lock lock = new ReentrantLock();
 
-    private static final String SECRET_KEY = "my-super-secret-key-which-is-32bytes";
+    @Value("${application.join-token.secret}")
+    private String secretKey;
 
     @Value("${application.current-domain}")
     String address;
@@ -76,7 +74,7 @@ public class GameRoomServiceImpl implements GameRoomService {
             gameRoom = gameRoomRepository.findGameRoomWithPlayers(id)
                     .orElseThrow(() -> new NotFoundException(id.toString()));
         }
-        Set<UUID> players = gameRoom.getPlayers().stream()
+        Set<UUID> players = gameRoom.getGameRoomPlayers().stream()
                 .map(GameRoomPlayer::getPlayersId)
                 .collect(Collectors.toSet());
 
@@ -100,7 +98,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     public void updateGameRoom(UpdateGameRoomDto dto) {
         GameRoom gameRoomOld = gameRoomRepository.findById(dto.getId())
                 .orElseThrow(() -> new NotFoundException(dto.getId().toString()));
-        gameRoomOld.setName(dto.getName());
+        roomMapper.updateGameRoom(gameRoomOld, dto);
     }
 
     @Override
@@ -118,7 +116,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         return "http://" + address + ":" + port + "/room/join/" + Jwts.builder()
                 .claim("roomId", id)
                 .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-                .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
+                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)))
                 .compact();
     }
 
@@ -135,7 +133,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         String roomId;
         try {
             Claims claims = Jwts.parser()
-                    .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
+                    .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
                     .parseClaimsJws(token)
                     .getBody();
             roomId = claims.get("roomId", String.class);
@@ -159,37 +157,32 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
-    @Transactional
-    //TODO здесь нужна блокировка чтобы никто не вышел за это время
     public boolean readyToGame(UUID gameRoomId) {
         String userId = keycloakUserService.getCurrentUser();
-        lock.lock();
-        try {
-            GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(gameRoomId)
-                    .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
 
-            GameRoomPlayer gameRoomPlayer = gameRoomOld.getPlayer(UUID.fromString(userId));
-            gameRoomPlayer.setReady(true);
-            GameRoom gameRoom = gameRoomPlayer.getGameRoom();
-            boolean readyToGame = true;
-            Set<GameRoomPlayer> players = gameRoom.getPlayers();
-            for (GameRoomPlayer player : players) {
-                if (!player.isReady()) {
-                    readyToGame = false;
-                }
+        GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(gameRoomId)
+                .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
+
+        GameRoomPlayer gameRoomPlayer = gameRoomOld.getPlayer(UUID.fromString(userId));
+        gameRoomPlayer.setReady(true);
+        GameRoom gameRoom = gameRoomPlayer.getGameRoom();
+        boolean readyToGame = true;
+        Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
+        for (GameRoomPlayer player : players) {
+            if (!player.isReady()) {
+                readyToGame = false;
             }
-            if (readyToGame) {
-                gameRoomOld.setStatus(StatusGame.PLAY);
-                activityUserService.activeRoom(gameRoomOld);
-            }
-            return readyToGame;
-        } finally {
-            lock.unlock();
         }
+        if (readyToGame) {
+            gameRoomOld.setStatus(StatusGame.PLAY);
+            activityUserService.activeRoom(gameRoomOld);
+        }
+        return readyToGame;
     }
 
     @Override
     @Transactional
+    //TODO необходимо написать условие на удаление, что если комната уже в игре то удалить нельзя или выйти самому
     public void leftRoom() {
         String userId = keycloakUserService.getCurrentUser();
         removePlayer(UUID.fromString(userId));

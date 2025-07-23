@@ -11,7 +11,9 @@ import ru.poker.sportpoker.dto.UserRegistrationDto;
 public class UserRegistrationHandler extends UserHandler<UserRegistrationDto> {
 
     @Override
-    protected void handleSpecifics(UserRegistrationDto userRegistrationDto, BindingResult bindingResult) {
+    protected void handleSpecifics(BindingResult bindingResult, UserRegistrationDto... dtos) {
+        UserRegistrationDto userRegistrationDto = dtos[0];
+
         if (userRegistrationDto.getEmail() == null) {
             bindingResult.reject("Email is null", "Укажите электронную почту");
         }

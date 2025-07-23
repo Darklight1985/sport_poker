@@ -12,4 +12,5 @@ public interface GameRoomPlayerRepository extends CrudRepository<GameRoomPlayer,
 
 
 
+
 }

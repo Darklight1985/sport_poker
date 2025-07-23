@@ -121,7 +121,7 @@ public class GameRoomServiceImplTest {
             assertEquals(StatusGame.PREP, gameRoomAfterSave.getStatus());
             assertNotNull(gameRoomAfterSave.getGameTime());
 
-            Set<GameRoomPlayer> players = gameRoom.getPlayers();
+            Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
             assertEquals(1, players.size());
         }
     }
@@ -288,7 +288,7 @@ public class GameRoomServiceImplTest {
             ResponseEntity<?> response = gameRoomService.joinRoom(token);
 
             verify(gameRoomRepository).save(gameRoom);
-            Set<GameRoomPlayer> players = gameRoom.getPlayers();
+            Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
             assertEquals(2, players.size());
             GameRoomPlayer gameRoomPlayer = players.stream().findFirst().get();
             assertFalse(gameRoom.getPlayer(USER_ID).isReady());

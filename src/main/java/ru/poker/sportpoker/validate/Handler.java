@@ -4,15 +4,15 @@ import lombok.Setter;
 import org.springframework.validation.BindingResult;
 
 @Setter
-abstract class Handler<T> {
+public abstract class Handler<T> {
 
     private Handler<T> nextHandler;
 
-    public abstract void handle(T t, BindingResult bindingResult);
+    public abstract void handle(BindingResult bindingResult, T... t);
 
     protected void getNextHandler(T request, BindingResult bindingResult) {
         if (nextHandler != null) {
-            nextHandler.handle(request, bindingResult);
+            nextHandler.handle(bindingResult, request);
         }
     }
 }

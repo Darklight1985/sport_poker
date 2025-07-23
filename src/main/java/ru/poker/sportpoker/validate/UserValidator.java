@@ -9,19 +9,23 @@ import ru.poker.sportpoker.dto.UserRegistrationDto;
 public class UserValidator {
 
     private final UserHandler<UserLoginDto> userLoginHandler;
-    private final UserHandler<UserRegistrationDto> userRegistrationHandler;
+    private final UserRegistrationHandler userRegistrationHandler;
+    private final UserCreateHandler userCreateHandler;
 
-    public UserValidator(UserLoginHandler userLoginHandler, UserRegistrationHandler userRegistrationHandler) {
+    public UserValidator(UserLoginHandler userLoginHandler, UserRegistrationHandler userRegistrationHandler,
+                         UserCreateHandler userCreateHandler) {
         this.userLoginHandler = userLoginHandler;
         this.userRegistrationHandler = userRegistrationHandler;
+        this.userCreateHandler = userCreateHandler;
     }
 
     public void validateLogin(UserLoginDto dto, BindingResult bindingResult) {
-        userLoginHandler.handle(dto, bindingResult);
+        userLoginHandler.handle(bindingResult, dto);
     }
 
     public void validateRegistration(UserRegistrationDto dto, BindingResult bindingResult) {
-        userRegistrationHandler.handle(dto, bindingResult);
-        userLoginHandler.handle(dto, bindingResult);
+        userLoginHandler.handle(bindingResult, dto);
+        userRegistrationHandler.handle(bindingResult, dto);
+        userCreateHandler.handle(bindingResult, dto);
     }
 }
