@@ -1,6 +1,5 @@
 package ru.poker.sportpoker.validate.room;
 
-;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,11 +19,6 @@ public class UserIsPlayerHandler extends RoomHandler<UUID> {
 
     @Override
     protected void handleSpecifics(BindingResult bindingResult, UUID... uuids) {
-        if (uuids == null || uuids.length == 0) {
-            bindingResult.reject("uuid", "must not be empty");
-            return;
-        }
-
         UUID roomId = uuids[0];
         String user = keycloakUserService.getCurrentUser();
         if (user == null) {
