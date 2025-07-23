@@ -25,6 +25,13 @@ public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
     List<GameRoom> findGameRoomByStatusEquals(StatusGame statusGame);
 
     @Query(value = """
+                        select gr from GameRoom gr
+                        where gr.status in :statusGame
+                        and gr.id = :roomId
+            """)
+    boolean roomInStatus(UUID roomId, List<StatusGame> statuses);
+
+    @Query(value = """
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 

@@ -1,12 +1,8 @@
 package ru.poker.sportpoker.service;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -19,12 +15,9 @@ import ru.poker.sportpoker.mapper.RoomMapper;
 import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.GameRoomPlayerRepository;
 import ru.poker.sportpoker.repository.GameRoomRepository;
+import ru.poker.sportpoker.utils.TokenUtils;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +25,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-//TODO везде добавить валидацию что это комната того кем она создана
 public class GameRoomServiceImpl implements GameRoomService {
 
     private final GameRoomRepository gameRoomRepository;
@@ -41,16 +33,6 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final GameRoomPlayerRepository gameRoomPlayerRepository;
     private final UserMapper userMapper;
     private final RoomMapper roomMapper;
-
-    @Value("${application.join-token.secret}")
-    private String secretKey;
-
-    @Value("${application.current-domain}")
-    String address;
-
-    @Value("${server.port}")
-    String port;
-
 
     @Override
     @Transactional
@@ -113,11 +95,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     public String getLinkToRoom(UUID id) {
         gameRoomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id.toString()));
-        return "http://" + address + ":" + port + "/room/join/" + Jwts.builder()
-                .claim("roomId", id)
-                .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)))
-                .compact();
+        return TokenUtils.getLinkWithToken(id);
     }
 
     @Override
@@ -132,11 +110,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         String roomId;
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
-                    .parseClaimsJws(token)
-                    .getBody();
-            roomId = claims.get("roomId", String.class);
+            roomId = TokenUtils.getRoomId(token);
         } catch (JwtException e) {
             return ResponseEntity.badRequest().body("Invalid or expired link");
         }
