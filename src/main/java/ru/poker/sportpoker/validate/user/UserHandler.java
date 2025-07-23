@@ -1,7 +1,8 @@
-package ru.poker.sportpoker.validate;
+package ru.poker.sportpoker.validate.user;
 
 
 import org.springframework.validation.BindingResult;
+import ru.poker.sportpoker.validate.Handler;
 
 abstract class UserHandler<T> extends Handler<T> {
 

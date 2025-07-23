@@ -43,6 +43,10 @@ public class GameRoomController {
     @PutMapping()
     public ResponseEntity<Void> updateGameRoom(@RequestBody UpdateGameRoomDto dto, BindingResult bindingResult) {
         roomValidator.validateUpdateGameRoom(dto, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         gameRoomService.updateGameRoom(dto);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
@@ -65,6 +69,10 @@ public class GameRoomController {
     @GetMapping("/{id}/link")
     public String getLinkRoom(@PathVariable UUID id, BindingResult bindingResult) {
         roomValidator.validateGenerateLinkToGameRoom(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         return gameRoomService.getLinkToRoom(id);
     }
 
@@ -72,6 +80,10 @@ public class GameRoomController {
     @PutMapping("/join/{token}")
     public ResponseEntity<?> joinRoom(@Parameter(description = "Токен для входа в комнату по приглашению")@PathVariable String token, BindingResult bindingResult) {
         roomValidator.validateJoinRoom(token, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         return gameRoomService.joinRoom(token);
     }
 
@@ -79,6 +91,10 @@ public class GameRoomController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGameRoom(@Parameter(description = "Идентификатор комнаты") @PathVariable UUID id, BindingResult bindingResult) {
         roomValidator.validateDeleteGameRoom(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         gameRoomService.deleteGameRoom(id);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -87,6 +103,10 @@ public class GameRoomController {
     @PostMapping("/{id}/ready")
     public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id, BindingResult bindingResult) {
         roomValidator.validateReadyToGame(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(gameRoomService.readyToGame(id));
     }
 
@@ -94,6 +114,10 @@ public class GameRoomController {
     @PostMapping("/{id}/left")
     public void leftRoom(@PathVariable UUID id, BindingResult bindingResult) {
         roomValidator.validateLeftGameRoom(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         gameRoomService.leftRoom();
     }
 
@@ -101,6 +125,10 @@ public class GameRoomController {
     @PostMapping("/{id}/kick/{userId}")
     public void kickRoom(@PathVariable UUID id, @PathVariable UUID userId, BindingResult bindingResult) {
         roomValidator.validateKickPlayer(id, userId, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         gameRoomService.kickFromRoom(userId);
     }
 }

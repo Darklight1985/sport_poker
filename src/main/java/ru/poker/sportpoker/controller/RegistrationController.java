@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.dto.UserLoginDto;
 import ru.poker.sportpoker.dto.UserRegistrationDto;
 import ru.poker.sportpoker.service.KeycloakUserService;
-import ru.poker.sportpoker.validate.UserValidator;
+import ru.poker.sportpoker.validate.user.UserValidator;
 import ru.poker.sportpoker.validate.ValidationException;
 
 @RestController

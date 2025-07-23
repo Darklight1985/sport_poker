@@ -1,4 +1,4 @@
-package ru.poker.sportpoker.validate;
+package ru.poker.sportpoker.validate.user;
 
 
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package ru.poker.sportpoker.validate;
+package ru.poker.sportpoker.validate.user;
 
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;

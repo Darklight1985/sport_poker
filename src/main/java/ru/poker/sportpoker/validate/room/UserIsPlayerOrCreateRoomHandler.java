@@ -7,14 +7,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.KeycloakUserService;
-import ru.poker.sportpoker.validate.UserHandler;
 
 import java.util.UUID;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class UserIsPlayerOrCreateRoomHandler extends UserHandler<UUID> {
+public class UserIsPlayerOrCreateRoomHandler extends RoomHandler<UUID> {
 
     private final GameRoomRepository gameRoomRepository;
     private final KeycloakUserService keycloakUserService;

@@ -6,14 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.repository.GameRoomRepository;
-import ru.poker.sportpoker.validate.UserHandler;
 
 import java.util.UUID;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class UserIsPlayerRoomHandler extends UserHandler<UUID> {
+public class UserIsPlayerRoomHandler extends RoomHandler<UUID> {
 
     private final GameRoomRepository gameRoomRepository;
 

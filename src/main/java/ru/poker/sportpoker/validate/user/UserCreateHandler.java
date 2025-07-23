@@ -1,4 +1,4 @@
-package ru.poker.sportpoker.validate;
+package ru.poker.sportpoker.validate.user;
 
 
 import lombok.RequiredArgsConstructor;
