@@ -4,7 +4,7 @@ package ru.poker.sportpoker.validate.user;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.validate.Handler;
 
-abstract class UserHandler<T> extends Handler<T> {
+public abstract class UserHandler<T> extends Handler<T> {
 
     @Override
     public void handle(BindingResult bindingResult, T... request) {
