@@ -17,7 +17,6 @@ public class RoomValidator {
     private final RoomCreateHandler roomCreateHandler;
     private final RoomCreateExistHandler roomCreateExistHandler;
     private final RoomUpdateHandler roomUpdateHandler;
-    private final PlayerHandler playerHandler;
     private final UserIsCreatorHandler userIsCreatorHandler;
     private final UserIsPlayerHandler userIsPlayerHandler;
     private final UserIsPlayerOrCreateRoomHandler userIsPlayerOrCreateRoomHandler;
@@ -27,7 +26,6 @@ public class RoomValidator {
     public void validateCreateRoom(CreateGameRoomDto dto, BindingResult bindingResult) {
         roomCreateHandler.handle(bindingResult, dto);
         roomCreateExistHandler.handle(bindingResult, dto);
-        playerHandler.handle(bindingResult);
     }
 
     public void validateUpdateGameRoom(UpdateGameRoomDto dto, BindingResult bindingResult) {

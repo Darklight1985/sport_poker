@@ -9,6 +9,7 @@ import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.KeycloakUserService;
+import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,23 +32,16 @@ public class RoomCreateExistHandler extends RoomHandler<CreateGameRoomDto> {
 
         String user = keycloakUserService.getCurrentUser();
         if (user == null) {
-            bindingResult.rejectValue("user", "user.not.found");
+            bindingResult.rejectValue(ErrorCodes.USER_NOT_AUTHENTICATED, "user.not.found");
         }
         UUID userId = UUID.fromString(user);
 
         if (gameRoomRepository.userHasRoom(userId, statusGameList)) {
-            bindingResult.reject("User has game room", "Пользовать %s уже закрепле за комнатой".formatted(userId));
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Пользовать уже закреплен за комнатой");
         }
 
         if (gameRoomRepository.existsByName(createGameRoomDto.getName())) {
-            bindingResult.reject("Room exists", "Комната с именем %s уже существует".formatted(createGameRoomDto.getName()));
-        }
-        if (bindingResult.hasErrors()) {
-            return;
-        }
-
-        if (createGameRoomDto.getGameTime() < 5 || createGameRoomDto.getGameTime() > 60) {
-            bindingResult.reject("Username is exists", "Время игры должно быть от 5 до 60 минут");
+            bindingResult.reject(ErrorCodes.ENTITY_ALREADY_EXISTS, "Комната с именем %s уже существует".formatted(createGameRoomDto.getName()));
         }
     }
 }

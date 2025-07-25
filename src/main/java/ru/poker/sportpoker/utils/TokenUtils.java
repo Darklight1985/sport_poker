@@ -25,19 +25,22 @@ public class TokenUtils {
     @Value("${server.port}")
     String port;
 
+    private final static String ROOM_ID = "roomId";
+    private final static String URL_FORMAT = "http://%s:%s/room/join/";
+
     public String getRoomId(String token) throws JwtException {
         String roomId;
         Claims claims = Jwts.parser()
                 .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
                 .parseClaimsJws(token)
                 .getBody();
-        roomId = claims.get("roomId", String.class);
+        roomId = claims.get(ROOM_ID, String.class);
         return roomId;
     }
 
     public String getLinkWithToken(UUID id) {
-        return "http://" + address + ":" + port + "/room/join/" + Jwts.builder()
-                .claim("roomId", id)
+        return URL_FORMAT.formatted(address, port) + Jwts.builder()
+                .claim(ROOM_ID, id)
                 .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
                 .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)))
                 .compact();

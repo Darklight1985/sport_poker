@@ -21,6 +21,12 @@ public class ErrorCodes {
      * Ошибки, возникающие, если необходимая сущность в БД не существует.
      */
     public static final String NONEXISTENT_ENTITY = "ENTITY_NOT_FOUND";
+
+    /**
+     * Ошибки, возникающие, если нарушена уникальность поля сущности
+     */
+    public static final String ENTITY_ALREADY_EXISTS = "ENTITY_ALREADY_EXISTS";
+
     /**
      * Ошибки, возникающие, если проверяемый объект является null.
      */
@@ -108,10 +114,6 @@ public class ErrorCodes {
     public static final String NOT_HOST_PORT_STRING = "NOT_HOST_PORT_STRING";
 
     /**
-     * Ошибки, возникающие при указании привелегии как разрешенной так и запрещенной для роли
-     */
-    public static final String PERMITTED_PROHIBITED_INTERSECTION = "PERMITTED_PROHIBITED_INTERSECTION";
-    /**
      * Ошибки, возникающие при указании не поддерживаемого типа аутентификации
      */
     public static final String UNSUPPORTED_AUTH_TYPE = "UNSUPPORTED_AUTH_TYPE";
@@ -157,6 +159,11 @@ public class ErrorCodes {
      * Попытка разблокировать уже разблокированного пользователя
      */
     public static final String USER_ALREADY_UNBLOCKED = "USER_ALREADY_UNBLOCKED";
+
+    /**
+     * Пользователь не аутентифицирован
+     */
+    public static final String USER_NOT_AUTHENTICATED = "USER_NOT_AUTHENTICATED";
 
     /**
      * Ошибки возникающие при попытке работать с заблокированным пользователем

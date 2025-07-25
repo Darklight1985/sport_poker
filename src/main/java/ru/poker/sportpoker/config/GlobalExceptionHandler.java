@@ -7,6 +7,7 @@ import ru.poker.sportpoker.exception.UserRegistrationException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(UserRegistrationException.class)
     public ResponseEntity<String> handleBadRequest(UserRegistrationException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
