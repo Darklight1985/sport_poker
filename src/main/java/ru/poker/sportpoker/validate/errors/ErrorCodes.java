@@ -77,6 +77,7 @@ public class ErrorCodes {
      * @see Character#isWhitespace(int)
      */
     public static final String FIELD_IS_BLANK = "FIELD_IS_BLANK";
+
     /**
      * Ошибки, возникающие, при связи родительской сущности с самой собой или с одним из ее наследников.
      */

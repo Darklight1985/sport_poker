@@ -29,8 +29,8 @@ public class RoomValidator {
     }
 
     public void validateUpdateGameRoom(UpdateGameRoomDto dto, BindingResult bindingResult) {
-        roomUpdateHandler.handle(bindingResult, dto);
         userIsCreatorHandler.handle(bindingResult, dto.getId());
+        roomUpdateHandler.handle(bindingResult, dto);
         roomActiveHandler.handle(bindingResult, dto.getId());
     }
 
@@ -38,6 +38,11 @@ public class RoomValidator {
         userIsCreatorHandler.handle(bindingResult, roomId);
         roomActiveHandler.handle(bindingResult, roomId);
     }
+
+    public void validateGetRoom(UUID roomId, BindingResult bindingResult) {
+        userIsPlayerOrCreateRoomHandler.handle(bindingResult, roomId);
+    }
+
 
     public void validateJoinRoom(String token, BindingResult bindingResult) {
         String roomId = null;

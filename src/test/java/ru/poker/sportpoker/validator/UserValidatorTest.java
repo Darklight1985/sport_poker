@@ -136,19 +136,21 @@ public class UserValidatorTest {
 
         @Test
         @DisplayName("Если пользователь задал имя которое уже существует, регистрация пройдет с ошибкой")
-        public void validateForRegisterUser() {
-              Mockito.when(keycloakUserService.userExists(USERNAME)).thenReturn(true);
-              userValidator.validateRegistration(userRegistrationDto, bindingResult);
-              Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+        public void test_1() {
+            Mockito.when(keycloakUserService.userExists(USERNAME)).thenReturn(true);
+            userValidator.validateRegistration(userRegistrationDto, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            Assertions.assertEquals(ErrorCodes.ENTITY_ALREADY_EXISTS, bindingResult.getAllErrors().get(0).getCode());
         }
 
         @Test
         @DisplayName("Если пользователь задал email который уже существует, регистрация пройдет с ошибкой")
-        public void validateForRegisterUser2() {
+        public void test_2() {
             Mockito.when(keycloakUserService.userExists(USERNAME)).thenReturn(false);
             Mockito.when(keycloakUserService.userMailExists(EMAIL)).thenReturn(true);
             userValidator.validateRegistration(userRegistrationDto, bindingResult);
             Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            Assertions.assertEquals(ErrorCodes.ENTITY_ALREADY_EXISTS, bindingResult.getAllErrors().get(0).getCode());
         }
 
         @ParameterizedTest(name = "Если {0}, то будет добавлена ошибка с соответствующим кодом")

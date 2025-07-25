@@ -53,7 +53,12 @@ public class GameRoomController {
 
     @Operation(description = "Получение данных об игровой комнате")
     @GetMapping("/{id}")
-    public ResponseEntity<GameRoomView> getGameRoom(@PathVariable UUID id) {
+    public ResponseEntity<GameRoomView> getGameRoom(@PathVariable UUID id, BindingResult bindingResult) {
+        roomValidator.validateGetRoom(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
         GameRoomView gameRoomView = gameRoomService.getGameRoom(id);
         return ResponseEntity.status(HttpStatus.CREATED).body(gameRoomView);
     }

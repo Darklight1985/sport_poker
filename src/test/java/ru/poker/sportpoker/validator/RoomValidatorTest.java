@@ -149,17 +149,29 @@ public class RoomValidatorTest {
 
         @Test
         @DisplayName("Если пользователь задал корректно все данные, вход в приложение пройдет успешно")
-        public void validateForRegisterUser() {
+        public void test_0() {
             Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
-            Mockito.when(gameRoomRepository.userHasRoom(UUID.fromString(USER_ID), statusGameList)).thenReturn(false);
-            Mockito.when(gameRoomRepository.existsByName(ROOM_NAME)).thenReturn(false);
-            roomValidator.validateCreateRoom(updateGameRoomDto, bindingResult);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            Mockito.when(gameRoomRepository.existsByName(ROOM_NAME, ROOM_ID)).thenReturn(false);
+            roomValidator.validateUpdateGameRoom(updateGameRoomDto, bindingResult);
             Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+
+        @Test
+        @DisplayName("Если пользователь задал корректно все данные, вход в приложение пройдет успешно")
+        public void test_2() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            Mockito.when(gameRoomRepository.existsByName(ROOM_NAME, ROOM_ID)).thenReturn(true);
+            roomValidator.validateUpdateGameRoom(updateGameRoomDto, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
         }
 
         @ParameterizedTest(name = "Если {0}, то будет добавлена ошибка с соответствующим кодом")
         @MethodSource("provideDataForConstraintTests")
-        void validateForLoginUser (Consumer<UpdateGameRoomDto> consumer, String errorCode) {
+        void test_1 (Consumer<UpdateGameRoomDto> consumer, String errorCode) {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
             consumer.accept(updateGameRoomDto);
             roomValidator.validateUpdateGameRoom(updateGameRoomDto, bindingResult);
             Assertions.assertEquals(1, bindingResult.getAllErrors().size());
@@ -168,15 +180,13 @@ public class RoomValidatorTest {
 
         private static Stream<Arguments> provideDataForConstraintTests() {
             return Stream.of(
-                    Arguments.of(Named.of("задать null вместе username",
-                            createArg(dto -> dto.setName(null))), ErrorCodes.FIELD_IS_NULL),
-                    Arguments.of(Named.of("задать пустую строку вместо пароля",
-                            createArg(dto -> dto.setName(""))), ErrorCodes.FIELD_IS_NULL),
-                    Arguments.of(Named.of("задать пробельную строку вместе пароля",
-                            createArg(dto -> dto.setName("   "))), ErrorCodes.FIELD_IS_NULL),
-                    Arguments.of(Named.of("задать пустую строку вместо username",
+                    Arguments.of(Named.of("задать пустую строку вместо имени комнаты",
+                            createArg(dto -> dto.setName(""))), ErrorCodes.FIELD_IS_BLANK),
+                    Arguments.of(Named.of("задать пробельную строку вместе имени комнаты",
+                            createArg(dto -> dto.setName("   "))), ErrorCodes.FIELD_IS_BLANK),
+                    Arguments.of(Named.of("задать слишком мало времени для игры",
                             createArg(dto -> dto.setGameTime(2))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
-                    Arguments.of(Named.of("задать пробельную строку вместо username",
+                    Arguments.of(Named.of("задать слишком много времени для игры",
                             createArg(dto -> dto.setGameTime(61))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION)
             );
         }
