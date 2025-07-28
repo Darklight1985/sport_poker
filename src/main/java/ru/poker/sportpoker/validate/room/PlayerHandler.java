@@ -7,6 +7,7 @@ import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.KeycloakUserService;
+import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +29,7 @@ public class PlayerHandler {
         UUID userId = UUID.fromString(user);
 
         if (gameRoomRepository.userHasRoom(userId, statusGameList)) {
-            bindingResult.rejectValue("user", "Пользователь уже закреплен за игровой комнатой");
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Пользователь уже закреплен за игровой комнатой");
         }
     }
 }

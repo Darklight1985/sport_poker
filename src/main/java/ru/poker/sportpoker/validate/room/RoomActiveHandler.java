@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
+import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +29,7 @@ public class RoomActiveHandler extends RoomHandler<UUID> {
         UUID roomId = uuids[0];
 
         if (gameRoomRepository.roomInStatus(roomId, statusGameList)) {
-            bindingResult.reject("Field is exists", "С указанной комнатой нельзя уже проводить никакие манипуляции");
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "С указанной комнатой нельзя уже проводить никакие манипуляции");
         }
     }
 }

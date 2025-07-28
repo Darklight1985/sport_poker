@@ -7,6 +7,7 @@ import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.utils.TokenUtils;
+import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
 import java.util.UUID;
 
@@ -22,6 +23,7 @@ public class RoomValidator {
     private final UserIsPlayerOrCreateRoomHandler userIsPlayerOrCreateRoomHandler;
     private final UserIsPlayerRoomHandler userIsPlayerRoomHandler;
     private final RoomActiveHandler roomActiveHandler;
+    private final PlayerHandler playerHandler;
 
     public void validateCreateRoom(CreateGameRoomDto dto, BindingResult bindingResult) {
         roomCreateHandler.handle(bindingResult, dto);
@@ -49,10 +51,10 @@ public class RoomValidator {
         try {
             roomId = TokenUtils.getRoomId(token);
         } catch (JwtException e) {
-            bindingResult.reject("invalid_token", "Токен кривой");
+            bindingResult.reject(ErrorCodes.VALUE_IS_NONPOSITIVE, "Токен кривой");
         }
 
-        userIsPlayerHandler.handle(bindingResult, UUID.fromString(roomId));
+        playerHandler.handle(bindingResult);
         roomActiveHandler.handle(bindingResult, UUID.fromString(roomId));
     }
 

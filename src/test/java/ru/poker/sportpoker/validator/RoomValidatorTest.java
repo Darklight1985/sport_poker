@@ -21,7 +21,9 @@ import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.KeycloakUserService;
 import ru.poker.sportpoker.utils.CommonValidationTestUtil;
+import ru.poker.sportpoker.utils.TokenUtils;
 import ru.poker.sportpoker.validate.errors.ErrorCodes;
+import ru.poker.sportpoker.validate.room.PlayerHandler;
 import ru.poker.sportpoker.validate.room.RoomActiveHandler;
 import ru.poker.sportpoker.validate.room.RoomCreateExistHandler;
 import ru.poker.sportpoker.validate.room.RoomCreateHandler;
@@ -32,6 +34,7 @@ import ru.poker.sportpoker.validate.room.UserIsPlayerHandler;
 import ru.poker.sportpoker.validate.room.UserIsPlayerOrCreateRoomHandler;
 import ru.poker.sportpoker.validate.room.UserIsPlayerRoomHandler;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -55,15 +58,20 @@ public class RoomValidatorTest {
     private UserIsPlayerOrCreateRoomHandler userIsPlayerOrCreateRoomHandler;
     private UserIsPlayerRoomHandler userIsPlayerRoomHandler;
     private RoomActiveHandler roomActiveHandler;
+    private PlayerHandler playerHandler;
+
+    private TokenUtils tokenUtils;
 
     private RoomValidator roomValidator;
 
     private final BindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "user");
 
+    private final static UUID ROOM_ID = UUID.randomUUID();
     private static final String ROOM_NAME = randomAlphabetic(8);
     private static final Integer GAME_TIME = Integer.valueOf(10);
     private static final String USER_ID = UUID.randomUUID().toString();
     private final List<StatusGame> statusGameList = List.of(StatusGame.PREP, StatusGame.PLAY);
+    private final List<StatusGame> statusGameList2 = List.of(StatusGame.PLAY, StatusGame.END);
 
 
     @BeforeEach
@@ -76,10 +84,11 @@ public class RoomValidatorTest {
         userIsPlayerOrCreateRoomHandler = new UserIsPlayerOrCreateRoomHandler(gameRoomRepository, keycloakUserService);
         userIsPlayerRoomHandler = new UserIsPlayerRoomHandler(gameRoomRepository);
         roomActiveHandler = new RoomActiveHandler(gameRoomRepository);
+        playerHandler = new PlayerHandler(gameRoomRepository, keycloakUserService);
 
         roomValidator = new RoomValidator(roomCreateHandler, roomCreateExistHandler, roomUpdateHandler,
                 userIsCreatorHandler, userIsPlayerHandler, userIsPlayerOrCreateRoomHandler, userIsPlayerRoomHandler,
-                roomActiveHandler);
+                roomActiveHandler, playerHandler);
     }
 
     @Nested
@@ -137,7 +146,6 @@ public class RoomValidatorTest {
     @DisplayName("При обновлении комнаты пользователем :")
     class ValidateUpdateRoomTest {
 
-        private final static UUID ROOM_ID = UUID.randomUUID();
         UpdateGameRoomDto updateGameRoomDto = new UpdateGameRoomDto();
 
         @BeforeEach
@@ -148,7 +156,7 @@ public class RoomValidatorTest {
         }
 
         @Test
-        @DisplayName("Если пользователь задал корректно все данные, вход в приложение пройдет успешно")
+        @DisplayName("Если пользователь задал корректно все данные, комната будет создана успешно")
         public void test_0() {
             Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
             Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
@@ -158,13 +166,37 @@ public class RoomValidatorTest {
         }
 
         @Test
-        @DisplayName("Если пользователь задал корректно все данные, вход в приложение пройдет успешно")
+        @DisplayName("Если комната с указанным именем уже существует, будет выдана ошибка с соответствующим кодом")
         public void test_2() {
             Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
             Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
             Mockito.when(gameRoomRepository.existsByName(ROOM_NAME, ROOM_ID)).thenReturn(true);
             roomValidator.validateUpdateGameRoom(updateGameRoomDto, bindingResult);
             Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.ENTITY_ALREADY_EXISTS, bindingResult);
+        }
+
+        @Test
+        @DisplayName("Если пользователь не является создателем комнаты, будет выдана ошибка с соответствующим кодом")
+        public void test_3() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(false);
+            roomValidator.validateUpdateGameRoom(updateGameRoomDto, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+
+        @Test
+        @DisplayName("Если обновляемая комната находится в активном статусе 'Игра' или в статуче 'Игра окончена', будет выдана ошибка" +
+                " с соответствующим кодом.")
+        public void test_4() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            Mockito.when(gameRoomRepository.existsByName(ROOM_NAME, ROOM_ID)).thenReturn(false);
+            Mockito.when(gameRoomRepository.roomInStatus(Mockito.eq(ROOM_ID), Mockito.eq(statusGameList2))).thenReturn(true);
+            roomValidator.validateUpdateGameRoom(updateGameRoomDto, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
         }
 
         @ParameterizedTest(name = "Если {0}, то будет добавлена ошибка с соответствующим кодом")
@@ -196,77 +228,202 @@ public class RoomValidatorTest {
         }
     }
 
-//    @Nested
-//    @DisplayName("При регистрации нового пользователя :")
-//    class ValidateRegisterUserTest {
-//
-//        UserRegistrationDto userRegistrationDto = new UserRegistrationDto();
-//
-//        @BeforeEach
-//        void init() {
-//            userRegistrationDto.setUsername(USERNAME);
-//            userRegistrationDto.setPassword(PASSWORD);
-//            userRegistrationDto.setEmail(EMAIL);
-//        }
-//
-//        @Test
-//        @DisplayName("Если пользователь задал всю информацию корректно, то ошибок не будет")
-//        public void test_0() {
-//            Mockito.when(keycloakUserService.userExists(USERNAME)).thenReturn(false);
-//            Mockito.when(keycloakUserService.userMailExists(EMAIL)).thenReturn(true);
-//            roomValidator.validateRegistration(userRegistrationDto, bindingResult);
-//            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
-//        }
-//
-//        @Test
-//        @DisplayName("Если пользователь задал имя которое уже существует, регистрация пройдет с ошибкой")
-//        public void validateForRegisterUser() {
-//              Mockito.when(keycloakUserService.userExists(USERNAME)).thenReturn(true);
-//              roomValidator.validateRegistration(userRegistrationDto, bindingResult);
-//              Assertions.assertEquals(1, bindingResult.getAllErrors().size());
-//        }
-//
-//        @Test
-//        @DisplayName("Если пользователь задал email который уже существует, регистрация пройдет с ошибкой")
-//        public void validateForRegisterUser2() {
-//            Mockito.when(keycloakUserService.userExists(USERNAME)).thenReturn(false);
-//            Mockito.when(keycloakUserService.userMailExists(EMAIL)).thenReturn(true);
-//            roomValidator.validateRegistration(userRegistrationDto, bindingResult);
-//            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
-//        }
-//
-//        @ParameterizedTest(name = "Если {0}, то будет добавлена ошибка с соответствующим кодом")
-//        @MethodSource("provideDataForConstraintTests")
-//        void validateRegistrationUser (Consumer<UserRegistrationDto> consumer, String errorCode) {
-//            consumer.accept(userRegistrationDto);
-//            roomValidator.validateRegistration(userRegistrationDto, bindingResult);
-//            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
-//            CommonValidationTestUtil.assertErrorCodeEquals(errorCode, bindingResult);
-//        }
-//
-//        private static Stream<Arguments> provideDataForConstraintTests() {
-//            return Stream.of(
-//                    Arguments.of(Named.of("задать null вместе username",
-//                            createArg(dto -> dto.setUsername(null))), ErrorCodes.FIELD_IS_NULL),
-//                    Arguments.of(Named.of("задать пустую строку вместо пароля",
-//                            createArg(dto -> dto.setPassword(""))), ErrorCodes.FIELD_IS_NULL),
-//                    Arguments.of(Named.of("задать пробельную строку вместе пароля",
-//                            createArg(dto -> dto.setPassword("   "))), ErrorCodes.FIELD_IS_NULL),
-//                    Arguments.of(Named.of("задать пустую строку вместо username",
-//                            createArg(dto -> dto.setUsername(""))), ErrorCodes.FIELD_IS_NULL),
-//                    Arguments.of(Named.of("задать пробельную строку вместо username",
-//                            createArg(dto -> dto.setUsername("  "))), ErrorCodes.FIELD_IS_NULL),
-//                    Arguments.of(Named.of("задать слишком короткое имя",
-//                            createArg(dto -> dto.setUsername(SHORT_USERNAME))), ErrorCodes.FIELD_TOO_SHORT),
-//                    Arguments.of(Named.of("задать пробельную строку вместо email",
-//                            createArg(dto -> dto.setEmail("  "))), ErrorCodes.FIELD_IS_NULL),
-//                    Arguments.of(Named.of("задать null вместе email",
-//                            createArg(dto -> dto.setEmail(null))), ErrorCodes.FIELD_IS_NULL)
-//            );
-//        }
-//
-//        private static Consumer<UserRegistrationDto> createArg(Consumer<UserRegistrationDto> consumer) {
-//            return consumer;
-//        }
-//    }
+    @Nested
+    @DisplayName("При получении активной ссылки на комнату :")
+    class ValidateGeneralLinkToRoomTest {
+
+        @Test
+        @DisplayName("Если пользователь задал корректно все данные, комната будет создана успешно")
+        public void test_0() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            roomValidator.validateGenerateLinkToGameRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+
+        @Test
+        @DisplayName("Если пользователь не является создателем указанной комнаты, то будет выдана ошибка с соответствующим кодом")
+        public void test_2() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(false);
+            roomValidator.validateGenerateLinkToGameRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+
+        @Test
+        @DisplayName("Если комната на которую пытаемся получить ссылку находится в активном статусе 'Игра' или в статусе" +
+                " 'Игра окончена', будет выдана ошибка с соответствующим кодом.")
+        public void test_4() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            Mockito.when(gameRoomRepository.roomInStatus(Mockito.eq(ROOM_ID), Mockito.eq(statusGameList2))).thenReturn(true);
+            roomValidator.validateGenerateLinkToGameRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+    }
+
+    @Nested
+    @DisplayName("При получении информации о комнате:")
+    class ValidateGetRoomTest {
+
+        @Test
+        @DisplayName("Если пользователь является участником комнаты, то получение информации пройдет успешно")
+        public void test_0() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userFromThisRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            roomValidator.validateGetRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+
+        @Test
+        @DisplayName("Если пользователь не является участником комнаты, то получим ошибку с соответствующим кодом")
+        public void test_1() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userFromThisRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(false);
+            roomValidator.validateGetRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+    }
+
+    @Nested
+    @DisplayName("При входе в комнату по токену :")
+    class ValidateJoinRoomTest {
+
+        private String linkWithToken = null;
+
+        @BeforeEach
+        void init() {
+            Field secretKeyField;
+            Field address;
+            Field port;
+            try {
+                secretKeyField = TokenUtils.class.getDeclaredField("secretKey");
+                address = TokenUtils.class.getDeclaredField("address");
+                port = TokenUtils.class.getDeclaredField("port");
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+            secretKeyField.setAccessible(true);
+            address.setAccessible(true);
+            port.setAccessible(true);
+            try {
+                secretKeyField.set(tokenUtils, "this-is-secret-only-for-you-loves");
+                address.set(tokenUtils, "localhost");
+                port.set(tokenUtils, "8083");
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            linkWithToken = TokenUtils.getLinkWithToken(ROOM_ID);
+        }
+
+        @Test
+        @DisplayName("Если пользователь уже является участником какой-то активной комнаты, то поулчим ошибку с соответствующим кодом")
+        public void test_0() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userHasRoom(Mockito.eq(UUID.fromString(USER_ID)), Mockito.eq(statusGameList))).thenReturn(false);
+            String token = linkWithToken.substring(linkWithToken.lastIndexOf("/") + 1);
+            roomValidator.validateJoinRoom(token, bindingResult);
+            Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+
+        @Test
+        @DisplayName("Если пользователь не является создателем указанной комнаты, то будет выдана ошибка с соответствующим кодом")
+        public void test_2() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userHasRoom(Mockito.eq(UUID.fromString(USER_ID)), Mockito.eq(statusGameList))).thenReturn(true);
+            String token = linkWithToken.substring(linkWithToken.lastIndexOf("/") + 1);
+
+            roomValidator.validateJoinRoom(token, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+
+        @Test
+        @DisplayName("Если комната в которую пользователь пытается зайти находится в активном статусе 'Игра' или в статусе" +
+                " 'Игра окончена', будет выдана ошибка с соответствующим кодом.")
+        public void test_4() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userHasRoom(Mockito.eq(UUID.fromString(USER_ID)), Mockito.eq(statusGameList))).thenReturn(false);
+            Mockito.when(gameRoomRepository.roomInStatus(Mockito.eq(ROOM_ID), Mockito.eq(statusGameList2))).thenReturn(true);
+            String token = linkWithToken.substring(linkWithToken.lastIndexOf("/") + 1);
+
+            roomValidator.validateJoinRoom(token, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+    }
+
+    @Nested
+    @DisplayName("При получении активной ссылки на комнату :")
+    class ValidateDeleteRoomTest {
+
+        @Test
+        @DisplayName("Если пользователь задал корректно все данные, комната будет создана успешно")
+        public void test_0() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            roomValidator.validateDeleteGameRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+
+        @Test
+        @DisplayName("Если пользователь не является создателем указанной комнаты, то будет выдана ошибка с соответствующим кодом")
+        public void test_2() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(false);
+            roomValidator.validateDeleteGameRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+
+        @Test
+        @DisplayName("Если комната на которую пытаемся получить ссылку находится в активном статусе 'Игра' или в статусе" +
+                " 'Игра окончена', будет выдана ошибка с соответствующим кодом.")
+        public void test_4() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userIsCreatorRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            Mockito.when(gameRoomRepository.roomInStatus(Mockito.eq(ROOM_ID), Mockito.eq(statusGameList2))).thenReturn(true);
+            roomValidator.validateDeleteGameRoom(ROOM_ID, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+    }
+
+    @Nested
+    @DisplayName("При отправке запроса о готовности к игре :")
+    class ValidateReadyToGameTest {
+
+        @Test
+        @DisplayName("Если пользователь является участником комнаты, то получение информации пройдет успешно")
+        public void test_0() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userFromThisRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            roomValidator.validateReadyToGame(ROOM_ID, bindingResult);
+            Assertions.assertEquals(0, bindingResult.getAllErrors().size());
+        }
+
+        @Test
+        @DisplayName("Если пользователь не является участником комнаты, то получим ошибку с соответствующим кодом")
+        public void test_1() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userFromThisRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(false);
+            roomValidator.validateReadyToGame(ROOM_ID, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+
+        @Test
+        @DisplayName("Если комната находится в статусе Игры или игра уже завершена, то получим ошибку с соответствующим кодом")
+        public void test_2() {
+            Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
+            Mockito.when(gameRoomRepository.userFromThisRoom(UUID.fromString(USER_ID), ROOM_ID)).thenReturn(true);
+            Mockito.when(gameRoomRepository.roomInStatus(Mockito.eq(ROOM_ID), Mockito.eq(statusGameList2))).thenReturn(true);
+            roomValidator.validateReadyToGame(ROOM_ID, bindingResult);
+            Assertions.assertEquals(1, bindingResult.getAllErrors().size());
+            CommonValidationTestUtil.assertErrorCodeEquals(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, bindingResult);
+        }
+    }
+
 }

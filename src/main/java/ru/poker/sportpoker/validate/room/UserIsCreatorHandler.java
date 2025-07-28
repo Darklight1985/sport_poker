@@ -23,12 +23,12 @@ public class UserIsCreatorHandler extends RoomHandler<UUID> {
     protected void handleSpecifics(BindingResult bindingResult, UUID... uuids) {
         String user = keycloakUserService.getCurrentUser();
         if (user == null) {
-            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "user.not.found");
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "Пользователь не аутентфиицирован");
         }
         UUID roomId = uuids[0];
 
         if (roomId == null) {
-            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "user.not.found");
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "Неоходиом задать идентификатор комнаты");
         }
 
         if (bindingResult.hasErrors()) {
@@ -38,7 +38,7 @@ public class UserIsCreatorHandler extends RoomHandler<UUID> {
         UUID userId = UUID.fromString(user);
 
         if (!gameRoomRepository.userIsCreatorRoom(userId, roomId)) {
-            bindingResult.reject("user", "Пользователь %s не является администратором комнаты %s".formatted(user, roomId));
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Пользователь %s не является администратором комнаты %s".formatted(user, roomId));
         }
     }
 }

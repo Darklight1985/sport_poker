@@ -40,7 +40,7 @@ public class TokenUtils {
 
     public String getLinkWithToken(UUID id) {
         return URL_FORMAT.formatted(address, port) + Jwts.builder()
-                .claim(ROOM_ID, id)
+                .claim(ROOM_ID, id.toString())
                 .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
                 .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)))
                 .compact();
