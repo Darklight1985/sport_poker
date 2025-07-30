@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.repository.GameRoomRepository;
+import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class UserIsPlayerRoomHandler extends RoomHandler<UUID> {
         UUID userId = uuids[1];
 
         if (roomId == null) {
-            bindingResult.rejectValue("roomId", "user.not.found");
+            bindingResult.rejectValue(ErrorCodes.FIELD_IS_NULL, "user.not.found");
         }
 
         if (bindingResult.hasErrors()) {
@@ -38,7 +39,7 @@ public class UserIsPlayerRoomHandler extends RoomHandler<UUID> {
         }
 
         if (!gameRoomRepository.userIsPlayerRoom(userId, roomId)) {
-            bindingResult.rejectValue("user", "Пользователь %s не является участником комнаты %s".formatted(userId, uuids));
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Пользователь %s не является участником комнаты %s".formatted(userId, uuids));
         }
     }
 }

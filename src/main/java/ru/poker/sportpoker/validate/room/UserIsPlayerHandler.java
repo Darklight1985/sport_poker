@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.KeycloakUserService;
+import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
 import java.util.UUID;
 
@@ -22,10 +23,10 @@ public class UserIsPlayerHandler extends RoomHandler<UUID> {
         UUID roomId = uuids[0];
         String user = keycloakUserService.getCurrentUser();
         if (user == null) {
-            bindingResult.reject("user", "user.not.found");
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "user.not.found");
         }
         if (roomId == null) {
-            bindingResult.reject("roomId", "user.not.found");
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "user.not.found");
         }
 
         if (bindingResult.hasErrors()) {
@@ -35,7 +36,7 @@ public class UserIsPlayerHandler extends RoomHandler<UUID> {
         UUID userId = UUID.fromString(user);
 
         if (!gameRoomRepository.userIsPlayerRoom(userId, roomId)) {
-            bindingResult.reject("user", "Пользователь %s не является участником комнаты %s".formatted(user, uuids));
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Пользователь %s не является участником комнаты %s".formatted(user, roomId));
         }
     }
 }

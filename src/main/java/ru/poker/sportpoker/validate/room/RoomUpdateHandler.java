@@ -31,7 +31,7 @@ public class RoomUpdateHandler extends RoomHandler<UpdateGameRoomDto> {
         }
 
         if (updateGameRoomDto.getName() != null && gameRoomRepository.existsByName(updateGameRoomDto.getName(), updateGameRoomDto.getId())) {
-            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Комната с именем %s уже существует".formatted(updateGameRoomDto.getName()));
+            bindingResult.reject(ErrorCodes.ENTITY_ALREADY_EXISTS, "Комната с именем %s уже существует".formatted(updateGameRoomDto.getName()));
         }
 
         if (updateGameRoomDto.getGameTime() != null && (updateGameRoomDto.getGameTime() < 5 || updateGameRoomDto.getGameTime() > 60)) {

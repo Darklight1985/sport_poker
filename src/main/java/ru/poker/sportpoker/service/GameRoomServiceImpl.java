@@ -50,7 +50,6 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public GameRoomView getGameRoom(UUID id) {
-        //TODO Переделать, вначале проверить статус, если она не на финише и не подготовке то тащим из активных комнат
         GameRoom gameRoom = activityUserService.getActiveRoom(id);
         if (gameRoom == null) {
             gameRoom = gameRoomRepository.findGameRoomWithPlayers(id)
@@ -115,15 +114,12 @@ public class GameRoomServiceImpl implements GameRoomService {
             return ResponseEntity.badRequest().body("Invalid or expired link");
         }
 
-        //TODO добавить проверку
         GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(UUID.fromString(roomId))
                 .orElseThrow(() -> new NotFoundException(roomId.toString()));
         GameRoomPlayer gameRoomPlayer = new GameRoomPlayer();
         gameRoomPlayer.setPlayersId(UUID.fromString(userId));
         gameRoomPlayer.setGameRoom(gameRoomOld);
 
-
-        //gameRoomPlayerRepository.save(gameRoomPlayer);
         gameRoomRepository.save(gameRoomOld);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)
