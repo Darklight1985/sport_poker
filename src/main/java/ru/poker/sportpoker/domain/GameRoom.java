@@ -33,6 +33,9 @@ public class GameRoom {
         status = StatusGame.PLAY;
     }
 
+    @Version
+    private Integer version;
+
     /**
      * Идентификатор комнаты
      */
@@ -76,11 +79,11 @@ public class GameRoom {
     private UUID creator;
 
     @OneToMany(mappedBy = "gameRoom", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    private Set<GameRoomPlayer> players = new HashSet<>();
+    private Set<GameRoomPlayer> gameRoomPlayers = new HashSet<>();
 
 
     public GameRoomPlayer getPlayer (UUID playerId) {
-        for (GameRoomPlayer gameRoomPlayer : players) {
+        for (GameRoomPlayer gameRoomPlayer : gameRoomPlayers) {
             if (gameRoomPlayer.getPlayersId().equals(playerId)) {
                 return gameRoomPlayer;
             }
@@ -89,7 +92,7 @@ public class GameRoom {
     }
 
     public void removePlayer (GameRoomPlayer gameRoomPlayer) {
-        players.remove(gameRoomPlayer);
+        gameRoomPlayers.remove(gameRoomPlayer);
     }
 
 

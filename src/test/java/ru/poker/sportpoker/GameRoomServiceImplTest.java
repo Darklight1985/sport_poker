@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,9 @@ import ru.poker.sportpoker.service.ActivityUsersServiceImpl;
 import ru.poker.sportpoker.service.GameRoomServiceImpl;
 import ru.poker.sportpoker.service.KeycloakUserService;
 import ru.poker.sportpoker.utils.TestUtils;
+import ru.poker.sportpoker.utils.TokenUtils;
 
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -36,7 +39,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,15 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class GameRoomServiceImplTest {
-
-    @Mock
-    private Lock lock;
 
     @Mock
     private GameRoomRepository gameRoomRepository;
@@ -73,6 +71,8 @@ public class GameRoomServiceImplTest {
     private final RoomMapper roomMapper = Mappers.getMapper(RoomMapper.class);
 
     private GameRoomServiceImpl gameRoomService;
+
+    private TokenUtils tokenUtils;
 
     @BeforeEach
     void setUp() {
@@ -121,7 +121,7 @@ public class GameRoomServiceImplTest {
             assertEquals(StatusGame.PREP, gameRoomAfterSave.getStatus());
             assertNotNull(gameRoomAfterSave.getGameTime());
 
-            Set<GameRoomPlayer> players = gameRoom.getPlayers();
+            Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
             assertEquals(1, players.size());
         }
     }
@@ -204,19 +204,9 @@ public class GameRoomServiceImplTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_METHOD)
     @DisplayName("При запросе ссылки для присоединения к комнате:")
+
+    //TODO написать тест на TokenUtils
     class GetLinkToRoomTest {
-        @Test
-        @DisplayName(" если комната существует, то получаем в ответ ссылку.")
-        public void testGetLinkToRoom() {
-            ReflectionTestUtils.setField(gameRoomService, "address", "localhost");
-            ReflectionTestUtils.setField(gameRoomService, "port", "8080");
-            String link = "http://localhost:8080/room/join/";
-
-            when(gameRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(gameRoom));
-
-            String result = gameRoomService.getLinkToRoom(ROOM_ID);
-            assertTrue(result.startsWith(link));
-        }
 
         @Test
         @DisplayName(" если комната не существует, то ловим исключение.")
@@ -230,25 +220,47 @@ public class GameRoomServiceImplTest {
     @DisplayName("При запросе на вход в комнату по ссылку:")
     class JoinRoomUserTest {
 
+        private String linkWithToken = null;
+        String token = null;
+
+        @BeforeEach
+        void init() {
+            Field secretKeyField;
+            Field address;
+            Field port;
+            try {
+                secretKeyField = TokenUtils.class.getDeclaredField("secretKey");
+                address = TokenUtils.class.getDeclaredField("address");
+                port = TokenUtils.class.getDeclaredField("port");
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+            secretKeyField.setAccessible(true);
+            address.setAccessible(true);
+            port.setAccessible(true);
+            try {
+                secretKeyField.set(tokenUtils, "this-is-secret-only-for-you-loves");
+                address.set(tokenUtils, "localhost");
+                port.set(tokenUtils, "8083");
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            linkWithToken = TokenUtils.getLinkWithToken(ROOM_ID);
+            token = linkWithToken.substring(linkWithToken.lastIndexOf("/") + 1);
+        }
+
         @Test
         @DisplayName(" если пользователь не авторизовался то перенаправляем его на логин.")
         public void testJoinRoomUserNull() {
             String token = "valid-token";
             when(keycloakUserService.getCurrentUser()).thenReturn(null);
             ResponseEntity<?> response = gameRoomService.joinRoom(token);
-
             assertEquals(HttpStatus.FOUND, response.getStatusCode());
         }
-
 
         @Test
         @DisplayName(" если ссылка рабочая и комната существует, то пользователь присоединяется к комнате.")
         public void testJoinRoom() {
-            String token = Jwts.builder()
-                    .claim("roomId", ROOM_ID)
-                    .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-                    .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
-                    .compact();
             String userId = UUID.randomUUID().toString();
 
             when(keycloakUserService.getCurrentUser()).thenReturn(userId);
@@ -262,11 +274,6 @@ public class GameRoomServiceImplTest {
         @Test
         @DisplayName(" если пользователь авторизован а комната не существует то ловим исключение.")
         public void testJoinRoom2() {
-            String token = Jwts.builder()
-                    .claim("roomId", ROOM_ID)
-                    .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-                    .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
-                    .compact();
             String userId = UUID.randomUUID().toString();
 
             when(keycloakUserService.getCurrentUser()).thenReturn(userId);
@@ -276,19 +283,13 @@ public class GameRoomServiceImplTest {
         @Test
         @DisplayName(" если ссылка рабочая и комната существует, то пользователь присоединяется к комнате.")
         public void testJoinRoom3() {
-            String token = Jwts.builder()
-                    .claim("roomId", ROOM_ID)
-                    .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-                    .signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)))
-                    .compact();
-
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(USER_ID));
             when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.of(gameRoom));
 
             ResponseEntity<?> response = gameRoomService.joinRoom(token);
 
             verify(gameRoomRepository).save(gameRoom);
-            Set<GameRoomPlayer> players = gameRoom.getPlayers();
+            Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
             assertEquals(2, players.size());
             GameRoomPlayer gameRoomPlayer = players.stream().findFirst().get();
             assertFalse(gameRoom.getPlayer(USER_ID).isReady());
@@ -313,14 +314,11 @@ public class GameRoomServiceImplTest {
         @Test
         @DisplayName(" если пользователь участник комнаты, то запрос будет успешным.")
         public void testReadyToGame3() {
-            ReflectionTestUtils.setField(gameRoomService, "lock", lock);
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(PLAYER_ID));
             when(gameRoomRepository.findGameRoomWithPlayers(ROOM_ID)).thenReturn(Optional.of(gameRoom));
             var result = gameRoomService.readyToGame(ROOM_ID);
             assertEquals(ROOM_ID, gameRoom.getId());
             assertEquals(StatusGame.PLAY, gameRoom.getStatus());
-            verify(lock, times(1)).lock();
-            verify(lock, times(1)).unlock();
             verify(activityUsersServiceImpl).activeRoom(gameRoom);
             assertTrue(result);
         }

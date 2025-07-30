@@ -39,11 +39,11 @@ public class GameRoomPlayer {
 
     public void setGameRoom(GameRoom gameRoom) {
         this.gameRoom = gameRoom;
-        gameRoom.getPlayers().add(this);
+        gameRoom.getGameRoomPlayers().add(this);
     }
 
     public void deleteGameRoom() {
-        gameRoom.getPlayers().remove(this);
+        gameRoom.getGameRoomPlayers().remove(this);
         this.gameRoom = null;
     }
 }

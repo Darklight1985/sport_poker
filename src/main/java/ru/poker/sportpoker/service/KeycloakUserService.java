@@ -3,6 +3,7 @@ package ru.poker.sportpoker.service;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class KeycloakUserService {
 
@@ -40,8 +42,6 @@ public class KeycloakUserService {
             UserRepresentation user = new UserRepresentation();
             user.setUsername(username);
             user.setEmail(email);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
             user.setEnabled(true);
 
             RealmResource realm = keycloak.realm(keycloakProperties.getRealm());
@@ -111,7 +111,7 @@ public class KeycloakUserService {
         var atr = tokenA.getTokenAttributes();
 
         String userId = (String) atr.get("sub");
-        System.out.println("User ID: " + userId);
+        log.debug("userId: {}", userId);
         return userId;
     }
 
@@ -135,5 +135,15 @@ public class KeycloakUserService {
             e.printStackTrace(); // Выведет подробности
             throw new RuntimeException("Invalid username or password", e);
         }
+    }
+
+    public boolean userExists(String username) {
+        UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
+        return !usersResource.search(username).isEmpty();
+    }
+
+    public boolean userMailExists(String email) {
+        UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
+        return !usersResource.searchByEmail(email, true).isEmpty();
     }
 }
