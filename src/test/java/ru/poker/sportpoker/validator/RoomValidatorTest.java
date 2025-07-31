@@ -23,6 +23,7 @@ import ru.poker.sportpoker.service.KeycloakUserService;
 import ru.poker.sportpoker.utils.CommonValidationTestUtil;
 import ru.poker.sportpoker.utils.TokenUtils;
 import ru.poker.sportpoker.validate.errors.ErrorCodes;
+import ru.poker.sportpoker.validate.room.PasswordRoomHandler;
 import ru.poker.sportpoker.validate.room.PlayerHandler;
 import ru.poker.sportpoker.validate.room.RoomActiveHandler;
 import ru.poker.sportpoker.validate.room.RoomCreateExistHandler;
@@ -59,6 +60,7 @@ public class RoomValidatorTest {
     private UserIsPlayerRoomHandler userIsPlayerRoomHandler;
     private RoomActiveHandler roomActiveHandler;
     private PlayerHandler playerHandler;
+    private PasswordRoomHandler passwordRoomHandler;
 
     private TokenUtils tokenUtils;
 
@@ -86,10 +88,11 @@ public class RoomValidatorTest {
         userIsPlayerRoomHandler = new UserIsPlayerRoomHandler(gameRoomRepository);
         roomActiveHandler = new RoomActiveHandler(gameRoomRepository);
         playerHandler = new PlayerHandler(gameRoomRepository, keycloakUserService);
+        passwordRoomHandler = new PasswordRoomHandler(gameRoomRepository);
 
         roomValidator = new RoomValidator(roomCreateHandler, roomCreateExistHandler, roomUpdateHandler,
                 userIsCreatorHandler, userIsPlayerHandler, userIsPlayerOrCreateRoomHandler, userIsPlayerRoomHandler,
-                roomActiveHandler, playerHandler);
+                roomActiveHandler, playerHandler, passwordRoomHandler);
     }
 
     @Nested
