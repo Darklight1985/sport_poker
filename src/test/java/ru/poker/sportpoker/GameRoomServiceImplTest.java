@@ -11,6 +11,8 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
@@ -146,8 +148,9 @@ public class GameRoomServiceImplTest {
             when(activityUsersServiceImpl.getActiveRoom(ROOM_ID)).thenReturn(gameRoom);
             when(keycloakUserService.getUserInfo(CREATOR_ID)).thenReturn(creatorInfo);
             when(keycloakUserService.getUsersInfo(Set.of(PLAYER_ID))).thenReturn(Set.of(playerInfo));
-            List<GameRoomView> rooms = gameRoomService.getGameRooms();
-            assertEquals(1, rooms.size());
+            Page<GameRoomShortView> rooms =
+                    gameRoomService.getGameRooms(PageRequest.of(0, 10), null, null);
+            assertEquals(1, rooms.getTotalElements());
         }
     }
 

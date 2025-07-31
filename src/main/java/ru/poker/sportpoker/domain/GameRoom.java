@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.*;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldNameConstants
 @Table(name = "game_room")
 public class GameRoom {
 

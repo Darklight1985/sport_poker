@@ -3,6 +3,8 @@ package ru.poker.sportpoker.service;
 import io.jsonwebtoken.JwtException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,10 +17,9 @@ import ru.poker.sportpoker.mapper.RoomMapper;
 import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.GameRoomPlayerRepository;
 import ru.poker.sportpoker.repository.GameRoomRepository;
+import ru.poker.sportpoker.repository.specification.GameRoomSpecification;
 import ru.poker.sportpoker.utils.TokenUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -67,11 +68,13 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
-    public List<GameRoomView> getGameRooms() {
-        List<GameRoom> gameRooms = (List<GameRoom>) gameRoomRepository.findAll();
-        List<GameRoomView> gameRoomViews = new ArrayList<>();
-        gameRooms.forEach(gameRoom -> gameRoomViews.add(getGameRoom(gameRoom.getId())));
-        return gameRoomViews;
+    public Page<GameRoomShortView> getGameRooms(Pageable pageable, StatusGame statusGame, String name) {
+        GameRoomSpecification specification = GameRoomSpecification.builder()
+                .statusGame(statusGame)
+                .name(name)
+                .build();
+        Page<GameRoom> gameRooms = gameRoomRepository.findAll(specification, pageable);
+        return gameRooms.map(roomMapper::getShortView);
     }
 
     @Override
@@ -171,7 +174,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     private void removePlayer(UUID playerId) {
         GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
-                .orElseThrow(() -> new NotFoundException());
+                .orElseThrow(NotFoundException::new);
 
         gameRoomPlayer.deleteGameRoom();
         gameRoomPlayerRepository.delete(gameRoomPlayer);

@@ -1,9 +1,13 @@
 package ru.poker.sportpoker.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.GameRoomShortView;
 import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.enums.StatusGame;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,9 +31,11 @@ public interface GameRoomService {
     /**
      * Получить информацию обо всех игровых комнатах
      *
+     * @param statusGame
+     * @param name
      * @return Список представлений с информацией об игровых комнатах
      */
-    List<GameRoomView> getGameRooms();
+    Page<GameRoomShortView> getGameRooms(Pageable pageable, StatusGame statusGame, String name);
 
     /**
      * Метод обновления данных об игровой комнате
