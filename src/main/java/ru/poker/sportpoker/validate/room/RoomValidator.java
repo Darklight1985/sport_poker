@@ -24,6 +24,7 @@ public class RoomValidator {
     private final UserIsPlayerRoomHandler userIsPlayerRoomHandler;
     private final RoomActiveHandler roomActiveHandler;
     private final PlayerHandler playerHandler;
+    private final PasswordRoomHandler passwordRoomHandler;
 
     public void validateCreateRoom(CreateGameRoomDto dto, BindingResult bindingResult) {
         roomCreateHandler.handle(bindingResult, dto);
@@ -54,8 +55,15 @@ public class RoomValidator {
             bindingResult.reject(ErrorCodes.VALUE_IS_NONPOSITIVE, "Токен кривой");
         }
 
+
         playerHandler.handle(bindingResult);
         roomActiveHandler.handle(bindingResult, UUID.fromString(roomId));
+    }
+
+    public void validateJoinRoom(UUID roomId, String password, BindingResult bindingResult) {
+        playerHandler.handle(bindingResult);
+        roomActiveHandler.handle(bindingResult, roomId);
+        passwordRoomHandler.handle(bindingResult, String.valueOf(roomId), password);
     }
 
     public void validateDeleteGameRoom(UUID roomId, BindingResult bindingResult) {

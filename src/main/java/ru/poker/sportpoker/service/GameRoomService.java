@@ -59,7 +59,15 @@ public interface GameRoomService {
      * @param token
      * @return
      */
-    ResponseEntity<?> joinRoom(String token);
+    ResponseEntity<?> joinRoomByToken(String token);
+
+
+    /**
+     * Метод входа в игровую комнату по паролю
+     *
+     * @return Статус операции
+     */
+    ResponseEntity<?> joinRoomByPassword(UUID roomId);
 
     /**
      * Метод указывает что игрок готов к игре в своей комнате

@@ -99,14 +99,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> joinRoom(String token) {
-        String userId = keycloakUserService.getCurrentUser();
-        if (userId == null) {
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .header("Location", "/login?redirect=/room/join/" + token)
-                    .build();
-        }
-
+    public ResponseEntity<?> joinRoomByToken(String token) {
         String roomId;
         try {
             roomId = TokenUtils.getRoomId(token);
@@ -114,7 +107,18 @@ public class GameRoomServiceImpl implements GameRoomService {
             return ResponseEntity.badRequest().body("Invalid or expired link");
         }
 
-        GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(UUID.fromString(roomId))
+        return joinRoom(UUID.fromString(roomId));
+    }
+
+    @Override
+    public ResponseEntity<?> joinRoomByPassword(UUID roomId) {
+        return joinRoom(roomId);
+    }
+
+    private ResponseEntity<?> joinRoom (UUID roomId) {
+        String userId = keycloakUserService.getCurrentUser();
+
+        GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(roomId)
                 .orElseThrow(() -> new NotFoundException(roomId.toString()));
         GameRoomPlayer gameRoomPlayer = new GameRoomPlayer();
         gameRoomPlayer.setPlayersId(UUID.fromString(userId));
@@ -125,6 +129,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .build();
     }
+
 
     @Override
     public boolean readyToGame(UUID gameRoomId) {

@@ -31,7 +31,7 @@ public class UserIsPlayerRoomHandler extends RoomHandler<UUID> {
         UUID userId = uuids[1];
 
         if (roomId == null) {
-            bindingResult.rejectValue(ErrorCodes.FIELD_IS_NULL, "user.not.found");
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "user.not.found");
         }
 
         if (bindingResult.hasErrors()) {

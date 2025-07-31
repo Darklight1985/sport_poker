@@ -23,7 +23,7 @@ public class PlayerHandler {
     protected void handle(BindingResult bindingResult) {
         String user = keycloakUserService.getCurrentUser();
         if (user == null) {
-            bindingResult.rejectValue("user", "user.not.found");
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "user.not.found");
         }
 
         UUID userId = UUID.fromString(user);

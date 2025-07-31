@@ -68,6 +68,7 @@ public class RoomValidatorTest {
 
     private final static UUID ROOM_ID = UUID.randomUUID();
     private static final String ROOM_NAME = randomAlphabetic(8);
+    private static final String PASSWORD = randomAlphabetic(10);
     private static final Integer GAME_TIME = Integer.valueOf(10);
     private static final String USER_ID = UUID.randomUUID().toString();
     private final List<StatusGame> statusGameList = List.of(StatusGame.PREP, StatusGame.PLAY);
@@ -101,10 +102,11 @@ public class RoomValidatorTest {
         void init() {
             createGameRoomDto.setName(ROOM_NAME);
             createGameRoomDto.setGameTime(GAME_TIME);
+            createGameRoomDto.setPassword(PASSWORD);
         }
 
         @Test
-        @DisplayName("Если пользователь задал корректно все данные, вход в приложение пройдет успешно")
+        @DisplayName("Если пользователь задал корректно все данные, создание комнаты пройдет успешно")
         public void validateForRegisterUser() {
             Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
             Mockito.when(gameRoomRepository.userHasRoom(UUID.fromString(USER_ID), statusGameList)).thenReturn(false);
@@ -126,13 +128,19 @@ public class RoomValidatorTest {
             return Stream.of(
                     Arguments.of(Named.of("задать null вместе username",
                             createArg(dto -> dto.setName(null))), ErrorCodes.FIELD_IS_NULL),
+                    Arguments.of(Named.of("задать пустую строку вместо имени",
+                            createArg(dto -> dto.setName(""))), ErrorCodes.FIELD_IS_NULL),
+                    Arguments.of(Named.of("задать пробельную строку вместе имени",
+                            createArg(dto -> dto.setName("   "))), ErrorCodes.FIELD_IS_NULL),
+                    Arguments.of(Named.of("задать null вместе пароля",
+                            createArg(dto -> dto.setName(null))), ErrorCodes.FIELD_IS_NULL),
                     Arguments.of(Named.of("задать пустую строку вместо пароля",
                             createArg(dto -> dto.setName(""))), ErrorCodes.FIELD_IS_NULL),
                     Arguments.of(Named.of("задать пробельную строку вместе пароля",
                             createArg(dto -> dto.setName("   "))), ErrorCodes.FIELD_IS_NULL),
-                    Arguments.of(Named.of("задать пустую строку вместо username",
+                    Arguments.of(Named.of("задать короткую строку для username",
                             createArg(dto -> dto.setGameTime(2))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
-                    Arguments.of(Named.of("задать пробельную строку вместо username",
+                    Arguments.of(Named.of("задать длинную строку для username",
                             createArg(dto -> dto.setGameTime(61))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION)
             );
         }
@@ -319,7 +327,8 @@ public class RoomValidatorTest {
         }
 
         @Test
-        @DisplayName("Если пользователь уже является участником какой-то активной комнаты, то поулчим ошибку с соответствующим кодом")
+        @DisplayName("Если токен валидный и пользователь не является участником какой-то активной комнаты, то поулчим" +
+                " ошибку с соответствующим кодом")
         public void test_0() {
             Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
             Mockito.when(gameRoomRepository.userHasRoom(Mockito.eq(UUID.fromString(USER_ID)), Mockito.eq(statusGameList))).thenReturn(false);
