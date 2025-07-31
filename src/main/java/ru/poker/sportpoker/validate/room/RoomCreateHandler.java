@@ -24,6 +24,11 @@ public class RoomCreateHandler extends RoomHandler<CreateGameRoomDto> {
         if (createGameRoomDto.getGameTime() == null) {
             bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "Необходимо задать время игры в комнате");
         }
+
+        if (createGameRoomDto.getPassword() == null || createGameRoomDto.getPassword().isBlank()) {
+            bindingResult.reject(ErrorCodes.FIELD_IS_NULL, "Необходимо задать пароль от комнаты");
+        }
+
         if (bindingResult.hasErrors()) {
             return;
         }
@@ -34,6 +39,10 @@ public class RoomCreateHandler extends RoomHandler<CreateGameRoomDto> {
 
         if (createGameRoomDto.getGameTime() < 5 || createGameRoomDto.getGameTime() > 60) {
             bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Длина игры должна составлять от 5 до 60 минут");
+        }
+
+        if (createGameRoomDto.getPassword().length() < 6 || createGameRoomDto.getPassword().length() > 12) {
+            bindingResult.reject(ErrorCodes.VALUE_CONSTRAINT_VIOLATION, "Длина паролья должна быть от 6 до 12 символов");
         }
     }
 }

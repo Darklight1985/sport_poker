@@ -70,6 +70,11 @@ public class GameRoom {
     private Integer gameTime;
 
     /**
+     * Пароль от комнаты
+     */
+    private String password;
+
+    /**
      * Статус комнаты
      */
     @Enumerated(EnumType.STRING)

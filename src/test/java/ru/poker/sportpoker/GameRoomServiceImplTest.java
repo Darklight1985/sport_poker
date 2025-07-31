@@ -1,7 +1,5 @@
 package ru.poker.sportpoker;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
 import ru.poker.sportpoker.dto.*;
@@ -31,10 +28,6 @@ import ru.poker.sportpoker.utils.TestUtils;
 import ru.poker.sportpoker.utils.TokenUtils;
 
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -254,7 +247,7 @@ public class GameRoomServiceImplTest {
         public void testJoinRoomUserNull() {
             String token = "valid-token";
             when(keycloakUserService.getCurrentUser()).thenReturn(null);
-            ResponseEntity<?> response = gameRoomService.joinRoom(token);
+            ResponseEntity<?> response = gameRoomService.joinRoomByToken(token);
             assertEquals(HttpStatus.FOUND, response.getStatusCode());
         }
 
@@ -266,7 +259,7 @@ public class GameRoomServiceImplTest {
             when(keycloakUserService.getCurrentUser()).thenReturn(userId);
             when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.of(gameRoom));
 
-            ResponseEntity<?> response = gameRoomService.joinRoom(token);
+            ResponseEntity<?> response = gameRoomService.joinRoomByToken(token);
 
             assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
         }
@@ -277,7 +270,7 @@ public class GameRoomServiceImplTest {
             String userId = UUID.randomUUID().toString();
 
             when(keycloakUserService.getCurrentUser()).thenReturn(userId);
-            assertThrows(NotFoundException.class, () -> gameRoomService.joinRoom(token));
+            assertThrows(NotFoundException.class, () -> gameRoomService.joinRoomByToken(token));
         }
 
         @Test
@@ -286,7 +279,7 @@ public class GameRoomServiceImplTest {
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(USER_ID));
             when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.of(gameRoom));
 
-            ResponseEntity<?> response = gameRoomService.joinRoom(token);
+            ResponseEntity<?> response = gameRoomService.joinRoomByToken(token);
 
             verify(gameRoomRepository).save(gameRoom);
             Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();

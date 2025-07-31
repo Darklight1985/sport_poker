@@ -89,7 +89,21 @@ public class GameRoomController {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
             throw new ValidationException(bindingResult);
         }
-        return gameRoomService.joinRoom(token);
+        return gameRoomService.joinRoomByToken(token);
+    }
+
+    @Operation(description = "Вход в игровую комнату по паролю")
+    @PutMapping("{id}/join/")
+    public ResponseEntity<?> joinRoomByPassword(@Parameter(description = "Токен для входа в комнату по приглашению")
+                                                    @PathVariable UUID id,
+                                                @RequestBody String password,
+                                                BindingResult bindingResult) {
+        roomValidator.validateJoinRoom(password, bindingResult);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
+        return gameRoomService.joinRoomByPassword(id);
     }
 
     @Operation(description = "Удаление игровой комнаты")
