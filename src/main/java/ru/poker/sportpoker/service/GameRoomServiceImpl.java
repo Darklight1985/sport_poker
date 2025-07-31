@@ -135,6 +135,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 
 
     @Override
+    @Transactional
     public boolean readyToGame(UUID gameRoomId) {
         String userId = keycloakUserService.getCurrentUser();
 
@@ -149,6 +150,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         for (GameRoomPlayer player : players) {
             if (!player.isReady()) {
                 readyToGame = false;
+                break;
             }
         }
         if (readyToGame) {

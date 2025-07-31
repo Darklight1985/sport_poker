@@ -20,7 +20,6 @@ import ru.poker.sportpoker.service.GameRoomService;
 import ru.poker.sportpoker.validate.room.RoomValidator;
 import ru.poker.sportpoker.validate.ValidationException;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
