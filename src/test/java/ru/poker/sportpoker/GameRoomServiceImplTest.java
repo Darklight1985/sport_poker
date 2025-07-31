@@ -242,6 +242,7 @@ public class GameRoomServiceImplTest {
             token = linkWithToken.substring(linkWithToken.lastIndexOf("/") + 1);
         }
 
+
         @Test
         @DisplayName(" если ссылка рабочая и комната существует, то пользователь присоединяется к комнате.")
         public void testJoinRoom() {
