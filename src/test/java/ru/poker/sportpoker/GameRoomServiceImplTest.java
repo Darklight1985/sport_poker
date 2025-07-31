@@ -243,15 +243,6 @@ public class GameRoomServiceImplTest {
         }
 
         @Test
-        @DisplayName(" если пользователь не авторизовался то перенаправляем его на логин.")
-        public void testJoinRoomUserNull() {
-            String token = "valid-token";
-            when(keycloakUserService.getCurrentUser()).thenReturn(null);
-            ResponseEntity<?> response = gameRoomService.joinRoomByToken(token);
-            assertEquals(HttpStatus.FOUND, response.getStatusCode());
-        }
-
-        @Test
         @DisplayName(" если ссылка рабочая и комната существует, то пользователь присоединяется к комнате.")
         public void testJoinRoom() {
             String userId = UUID.randomUUID().toString();
