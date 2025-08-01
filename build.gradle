@@ -31,6 +31,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     implementation("org.keycloak:keycloak-admin-client:22.0.1")
+
+    implementation 'io.minio:minio:8.5.17'
+
     implementation 'org.flywaydb:flyway-core'
  //   testImplementation 'org.flywaydb:flyway-core'
     runtimeOnly 'com.h2database:h2'
