@@ -175,6 +175,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     private void removePlayer(UUID playerId) {
+        //TODO после удаления необходимо проверять что может игроки все активны и игру можно начинать
         GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
                 .orElseThrow(NotFoundException::new);
 
