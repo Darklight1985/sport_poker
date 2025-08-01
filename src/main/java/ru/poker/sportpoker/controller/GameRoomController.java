@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
@@ -99,12 +100,12 @@ public class GameRoomController {
     }
 
     @Operation(description = "Вход в игровую комнату по паролю")
-    @PutMapping("{id}/join/")
+    @PutMapping("{id}/join")
     public ResponseEntity<?> joinRoomByPassword(@Parameter(description = "Токен для входа в комнату по приглашению")
                                                     @PathVariable UUID id,
                                                 @RequestBody String password,
                                                 BindingResult bindingResult) {
-        roomValidator.validateJoinRoom(password, bindingResult);
+        roomValidator.validateJoinRoom(id, password, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
             throw new ValidationException(bindingResult);
@@ -126,7 +127,8 @@ public class GameRoomController {
 
     @Operation(description = "Принятие от игрока готовности к игре")
     @PostMapping("/{id}/ready")
-    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id, BindingResult bindingResult) {
+    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
         roomValidator.validateReadyToGame(id, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
@@ -137,7 +139,8 @@ public class GameRoomController {
 
     @Operation(description = "Покинуть игровую комнату")
     @PostMapping("/{id}/left")
-    public void leftRoom(@PathVariable UUID id, BindingResult bindingResult) {
+    public void leftRoom(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
         roomValidator.validateLeftGameRoom(id, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());

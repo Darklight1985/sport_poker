@@ -36,7 +36,7 @@ public class GameRoom {
     }
 
     @Version
-    private Integer version;
+    private int version;
 
     /**
      * Идентификатор комнаты
@@ -85,9 +85,9 @@ public class GameRoom {
     @Column(updatable = false)
     private UUID creator;
 
-    @OneToMany(mappedBy = "gameRoom", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @OneToMany(mappedBy = "gameRoom", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OptimisticLock(excluded = false)
     private Set<GameRoomPlayer> gameRoomPlayers = new HashSet<>();
-
 
     public GameRoomPlayer getPlayer (UUID playerId) {
         for (GameRoomPlayer gameRoomPlayer : gameRoomPlayers) {

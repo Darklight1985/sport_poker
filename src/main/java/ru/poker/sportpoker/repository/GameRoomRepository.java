@@ -19,17 +19,18 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, UUID>, JpaSp
     Optional<GameRoom> findGameRoomWithPlayers(UUID roomId);
 
     @Query(value = """
-                        select gr from GameRoom gr
+                        select case when (COUNT (gr) > 0) THEN true ELSE false END
+                        from GameRoom gr
                         where gr.status in :statusGame
                         and gr.id = :roomId
             """)
-    boolean roomInStatus(UUID roomId, List<StatusGame> statuses);
+    boolean roomInStatus(UUID roomId, List<StatusGame> statusGame);
 
     @Query(value = """
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 
-               where gr.id = :gameRoomId 
+               where gr.id = :roomId 
                and (pl.playersId = :userId or gr.creator = :userId)
             """)
     boolean userFromThisRoom(UUID userId, UUID roomId);
@@ -38,7 +39,7 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, UUID>, JpaSp
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 
-               where gr.id = :gameRoomId 
+               where gr.id = :roomId 
                and gr.creator = :userId
             """)
     boolean userIsCreatorRoom(UUID userId, UUID roomId);
@@ -47,7 +48,7 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, UUID>, JpaSp
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 
-               where gr.id = :gameRoomId 
+               where gr.id = :roomId 
                and pl.playersId = :userId
             """)
     boolean userIsPlayerRoom(UUID userId, UUID roomId);
@@ -66,7 +67,7 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, UUID>, JpaSp
     @Query(value = """
                  select gr from GameRoom gr
                  where gr.name = :name
-                 and gr.id <> :gameRoomId
+                 and gr.id <> :roomId
             """)
     boolean existsByName(String name, UUID roomId);
 }
