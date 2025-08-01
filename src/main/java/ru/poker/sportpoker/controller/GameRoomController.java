@@ -4,18 +4,23 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.GameRoomShortView;
 import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.service.GameRoomService;
 import ru.poker.sportpoker.validate.room.RoomValidator;
 import ru.poker.sportpoker.validate.ValidationException;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -65,8 +70,10 @@ public class GameRoomController {
 
     @Operation(description = "Получение данных об игровых комнатах")
     @GetMapping("")
-    public ResponseEntity<List<GameRoomView>> getGameRooms() {
-        List<GameRoomView> gameRoomViews = gameRoomService.getGameRooms();
+    public ResponseEntity<Page<GameRoomShortView>> getGameRooms(@PageableDefault Pageable pageable,
+                                                                @RequestParam(required = false) String name,
+                                                                @RequestParam(required = false) StatusGame statusGame) {
+        Page<GameRoomShortView> gameRoomViews = gameRoomService.getGameRooms(pageable, statusGame, name);
         return ResponseEntity.status(HttpStatus.CREATED).body(gameRoomViews);
     }
 
@@ -93,12 +100,12 @@ public class GameRoomController {
     }
 
     @Operation(description = "Вход в игровую комнату по паролю")
-    @PutMapping("{id}/join/")
+    @PutMapping("{id}/join")
     public ResponseEntity<?> joinRoomByPassword(@Parameter(description = "Токен для входа в комнату по приглашению")
                                                     @PathVariable UUID id,
                                                 @RequestBody String password,
                                                 BindingResult bindingResult) {
-        roomValidator.validateJoinRoom(password, bindingResult);
+        roomValidator.validateJoinRoom(id, password, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
             throw new ValidationException(bindingResult);
@@ -120,7 +127,8 @@ public class GameRoomController {
 
     @Operation(description = "Принятие от игрока готовности к игре")
     @PostMapping("/{id}/ready")
-    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id, BindingResult bindingResult) {
+    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
         roomValidator.validateReadyToGame(id, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
@@ -131,7 +139,8 @@ public class GameRoomController {
 
     @Operation(description = "Покинуть игровую комнату")
     @PostMapping("/{id}/left")
-    public void leftRoom(@PathVariable UUID id, BindingResult bindingResult) {
+    public void leftRoom(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
         roomValidator.validateLeftGameRoom(id, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());

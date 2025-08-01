@@ -11,6 +11,11 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
@@ -142,12 +147,11 @@ public class GameRoomServiceImplTest {
         @Test
         @DisplayName(" получаем данные по всем комнатам")
         public void testGetGameRooms() {
-            when(gameRoomRepository.findAll()).thenReturn(List.of(gameRoom));
-            when(activityUsersServiceImpl.getActiveRoom(ROOM_ID)).thenReturn(gameRoom);
-            when(keycloakUserService.getUserInfo(CREATOR_ID)).thenReturn(creatorInfo);
-            when(keycloakUserService.getUsersInfo(Set.of(PLAYER_ID))).thenReturn(Set.of(playerInfo));
-            List<GameRoomView> rooms = gameRoomService.getGameRooms();
-            assertEquals(1, rooms.size());
+            when(gameRoomRepository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl(List.of(gameRoom)));
+            Page<GameRoomShortView> rooms =
+                    gameRoomService.getGameRooms(PageRequest.of(0, 10), null, null);
+            assertEquals(1, rooms.getTotalElements());
         }
     }
 

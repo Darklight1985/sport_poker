@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.*;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldNameConstants
 @Table(name = "game_room")
 public class GameRoom {
 
@@ -34,7 +36,7 @@ public class GameRoom {
     }
 
     @Version
-    private Integer version;
+    private int version;
 
     /**
      * Идентификатор комнаты
@@ -83,9 +85,9 @@ public class GameRoom {
     @Column(updatable = false)
     private UUID creator;
 
-    @OneToMany(mappedBy = "gameRoom", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @OneToMany(mappedBy = "gameRoom", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OptimisticLock(excluded = false)
     private Set<GameRoomPlayer> gameRoomPlayers = new HashSet<>();
-
 
     public GameRoomPlayer getPlayer (UUID playerId) {
         for (GameRoomPlayer gameRoomPlayer : gameRoomPlayers) {

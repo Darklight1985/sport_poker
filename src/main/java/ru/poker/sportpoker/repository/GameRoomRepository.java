@@ -1,7 +1,8 @@
 package ru.poker.sportpoker.repository;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.enums.StatusGame;
 
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
+public interface GameRoomRepository extends JpaRepository<GameRoom, UUID>, JpaSpecificationExecutor<GameRoom> {
 
     @Query(value = """
             select gr from GameRoom gr
@@ -18,17 +19,18 @@ public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
     Optional<GameRoom> findGameRoomWithPlayers(UUID roomId);
 
     @Query(value = """
-                        select gr from GameRoom gr
+                        select case when (COUNT (gr) > 0) THEN true ELSE false END
+                        from GameRoom gr
                         where gr.status in :statusGame
                         and gr.id = :roomId
             """)
-    boolean roomInStatus(UUID roomId, List<StatusGame> statuses);
+    boolean roomInStatus(UUID roomId, List<StatusGame> statusGame);
 
     @Query(value = """
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 
-               where gr.id = :gameRoomId 
+               where gr.id = :roomId 
                and (pl.playersId = :userId or gr.creator = :userId)
             """)
     boolean userFromThisRoom(UUID userId, UUID roomId);
@@ -37,7 +39,7 @@ public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 
-               where gr.id = :gameRoomId 
+               where gr.id = :roomId 
                and gr.creator = :userId
             """)
     boolean userIsCreatorRoom(UUID userId, UUID roomId);
@@ -46,7 +48,7 @@ public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
                select case when (COUNT (gr) > 0) THEN true ELSE false END 
                from GameRoom gr
                left join gr.gameRoomPlayers pl 
-               where gr.id = :gameRoomId 
+               where gr.id = :roomId 
                and pl.playersId = :userId
             """)
     boolean userIsPlayerRoom(UUID userId, UUID roomId);
@@ -65,7 +67,7 @@ public interface GameRoomRepository extends CrudRepository<GameRoom, UUID> {
     @Query(value = """
                  select gr from GameRoom gr
                  where gr.name = :name
-                 and gr.id <> :gameRoomId
+                 and gr.id <> :roomId
             """)
     boolean existsByName(String name, UUID roomId);
 }
