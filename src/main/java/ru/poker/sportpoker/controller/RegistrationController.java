@@ -26,10 +26,6 @@ public class RegistrationController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegistrationDto dto, BindingResult bindingResult) {
         userValidator.validateRegistration(dto, bindingResult);
-        if (bindingResult.hasErrors()) {
-            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
-            throw new ValidationException(bindingResult);
-        }
         keycloakUserService.createUser(dto.getUsername(), dto.getEmail(), dto.getPassword(), dto.getFirstName(), dto.getLastName());
         return ResponseEntity.ok("User registered");
     }

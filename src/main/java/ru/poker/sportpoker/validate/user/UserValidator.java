@@ -1,11 +1,14 @@
 package ru.poker.sportpoker.validate.user;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.dto.UserLoginDto;
 import ru.poker.sportpoker.dto.UserRegistrationDto;
+import ru.poker.sportpoker.validate.ValidationException;
 
 @Component
+@Slf4j
 public class UserValidator {
 
     private final UserHandler<UserLoginDto> userLoginHandler;
@@ -27,5 +30,9 @@ public class UserValidator {
         userLoginHandler.handle(bindingResult, dto);
         userRegistrationHandler.handle(bindingResult, dto);
         userCreateHandler.handle(bindingResult, dto);
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
     }
 }
