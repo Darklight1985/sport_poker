@@ -30,9 +30,5 @@ public class UserValidator {
         userLoginHandler.handle(bindingResult, dto);
         userRegistrationHandler.handle(bindingResult, dto);
         userCreateHandler.handle(bindingResult, dto);
-        if (bindingResult.hasErrors()) {
-            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
-            throw new ValidationException(bindingResult);
-        }
     }
 }
