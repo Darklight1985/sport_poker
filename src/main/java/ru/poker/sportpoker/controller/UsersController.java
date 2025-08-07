@@ -8,6 +8,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,8 @@ import ru.poker.sportpoker.dto.UploadFileResponse;
 import ru.poker.sportpoker.dto.UserView;
 import ru.poker.sportpoker.service.MinioFileService;
 import ru.poker.sportpoker.service.UserService;
+import ru.poker.sportpoker.validate.ValidationException;
+import ru.poker.sportpoker.validate.user.UserValidator;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -30,6 +34,7 @@ import java.util.UUID;
 public class UsersController {
 
     private final UserService userService;
+    private final UserValidator userValidator;
 
     @Operation(description = "Получение информации о текущем пользователе")
     @GetMapping
@@ -40,6 +45,12 @@ public class UsersController {
     @Operation(description = "Получение аватара пользователя")
     @GetMapping("{id}/avatar")
     public ResponseEntity<InputStreamResource> getAvatar(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "user_id");
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
+        userValidator.validateGetAvatar(id, bindingResult);
         MinioFileService.MinioFileResponse content = userService.getAvatar(id);
         return new ResponseEntity<>(content.inputStreamResource(), getHeaders(
                 MediaType.valueOf(content.contentType())), HttpStatus.OK);
@@ -50,6 +61,12 @@ public class UsersController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     UploadFileResponse uploadEmployeeAvatar(@PathVariable UUID id,
                                             @RequestParam("avatar") MultipartFile file) throws IOException {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "user_id");
+        if (bindingResult.hasErrors()) {
+            log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
+            throw new ValidationException(bindingResult);
+        }
+        userValidator.validatePutAvatar(id, file, bindingResult);
         return userService.uploadAvatar(id, file);
     }
 

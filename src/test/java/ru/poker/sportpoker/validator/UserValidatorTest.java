@@ -19,7 +19,9 @@ import ru.poker.sportpoker.dto.UserLoginDto;
 import ru.poker.sportpoker.dto.UserRegistrationDto;
 import ru.poker.sportpoker.service.KeycloakUserService;
 import ru.poker.sportpoker.utils.CommonValidationTestUtil;
+import ru.poker.sportpoker.validate.MultipartfileHandler;
 import ru.poker.sportpoker.validate.errors.ErrorCodes;
+import ru.poker.sportpoker.validate.room.UserIsHimselfHandler;
 import ru.poker.sportpoker.validate.user.UserCreateHandler;
 import ru.poker.sportpoker.validate.user.UserLoginHandler;
 import ru.poker.sportpoker.validate.user.UserRegistrationHandler;
@@ -44,6 +46,10 @@ public class UserValidatorTest {
 
     private UserValidator userValidator;
 
+    private UserIsHimselfHandler userIsHimselfHandler;
+
+    private MultipartfileHandler multipartfileHandler;
+
     private final BindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "user");
 
     private static final String USERNAME = randomAlphabetic(8);
@@ -58,7 +64,8 @@ public class UserValidatorTest {
         userRegistrationHandler = new UserRegistrationHandler();
         userCreateHandler = new UserCreateHandler(keycloakUserService);
 
-        userValidator = new UserValidator(userLoginHandler, userRegistrationHandler, userCreateHandler);
+        userValidator = new UserValidator(userLoginHandler, userRegistrationHandler, userCreateHandler,
+                userIsHimselfHandler, multipartfileHandler);
     }
 
     @Nested
