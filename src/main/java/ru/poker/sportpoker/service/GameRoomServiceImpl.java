@@ -61,8 +61,8 @@ public class GameRoomServiceImpl implements GameRoomService {
                 .collect(Collectors.toSet());
 
         UUID creatorId = gameRoom.getCreator();
-        UserShortInfo creatorInfo = userMapper.getUserShortInfo(keycloakUserService.getUserInfo(creatorId));
-        Set<UserShortInfo> playersInfo = userMapper.getUserShortInfoList(keycloakUserService.getUsersInfo(players));
+        PlayerShortInfo creatorInfo = userMapper.getUserShortInfo(keycloakUserService.getUserInfo(creatorId));
+        Set<PlayerShortInfo> playersInfo = userMapper.getUserShortInfoList(keycloakUserService.getUsersInfo(players));
         return roomMapper.getView(gameRoom, creatorInfo, playersInfo);
     }
 

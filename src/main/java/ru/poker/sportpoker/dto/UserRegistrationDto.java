@@ -11,10 +11,4 @@ public class UserRegistrationDto extends UserLoginDto {
 
     @Schema(description = "Почтовый ящик пользователя")
     private String email;
-
-    @Schema(description = "Имя")
-    private String firstName;
-
-    @Schema(description = "Фамилия")
-    private String lastName;
 }

@@ -12,10 +12,10 @@ import java.util.Set;
 public class GameRoomView extends GameRoomShortView {
 
     @Schema(description = "Информация о создателе комнаты")
-    private UserShortInfo creator;
+    private PlayerShortInfo creator;
 
     @Schema(description = "Информация обо всех игроках комнаты")
-    private Set<UserShortInfo> players;
+    private Set<PlayerShortInfo> players;
 
     @Schema(description = "Сколько времени на игру осталось")
     private Integer minutesLeft;

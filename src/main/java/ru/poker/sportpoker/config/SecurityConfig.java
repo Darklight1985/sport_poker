@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/webjars/**").permitAll()
                         .requestMatchers("/api/room/join/**").hasRole("user")
                         .requestMatchers("/api/room/**").hasRole("user")
+                        .requestMatchers("/api/user/**").hasRole("user")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

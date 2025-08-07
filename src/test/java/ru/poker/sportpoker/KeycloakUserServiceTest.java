@@ -19,7 +19,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import ru.poker.sportpoker.config.KeycloakProperties;
-import ru.poker.sportpoker.dto.UserInfo;
+import ru.poker.sportpoker.dto.PlayerInfo;
 import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.service.KeycloakUserService;
 import ru.poker.sportpoker.utils.TestUtils;
@@ -98,8 +98,6 @@ public class KeycloakUserServiceTest {
         String username = "testuser";
         String email = "test@example.com";
         String password = "password";
-        String firstName = "John";
-        String lastName = "Doe";
 
         when(keycloakProperties.getRealm()).thenReturn("keycloak");
         when(credentials.getSecret()).thenReturn("secret");
@@ -115,7 +113,7 @@ public class KeycloakUserServiceTest {
             throw new RuntimeException(e);
         }
 
-        keycloakUserService.createUser(username, email, password, firstName, lastName);
+        keycloakUserService.createUser(username, email, password);
         verify(userResource).resetPassword(any());
     }
 
@@ -131,17 +129,15 @@ public class KeycloakUserServiceTest {
         when(userResource.toRepresentation()).thenReturn(userRepresentation1);
         when(userResource2.toRepresentation()).thenReturn(userRepresentation2);
 
-        Set<UserInfo> result = keycloakUserService.getUsersInfo(userIds);
+        Set<PlayerInfo> result = keycloakUserService.getUsersInfo(userIds);
 
 
         assertEquals(2, result.size());
-        UserInfo userInfo = result.stream().filter(u -> u.getUserId().equals(USER_ID)).findFirst().get();
-        UserInfo userInfo2 = result.stream().filter(u -> u.getUserId().equals(USER_ID_2)).findFirst().get();
+        PlayerInfo playerInfo = result.stream().filter(u -> u.getUserId().equals(USER_ID)).findFirst().get();
+        PlayerInfo playerInfo2 = result.stream().filter(u -> u.getUserId().equals(USER_ID_2)).findFirst().get();
 
-        assertEquals(userInfo.getEmail(), email1);
-        assertEquals(userInfo2.getEmail(), email2);
-        assertEquals(userInfo.getFirstName(), firstName1);
-        assertEquals(userInfo2.getLastName(), lastName2);
+        assertEquals(playerInfo.getEmail(), email1);
+        assertEquals(playerInfo2.getEmail(), email2);
     }
 
     @Test
@@ -152,12 +148,10 @@ public class KeycloakUserServiceTest {
         when(mockUsersResource.get(String.valueOf(USER_ID))).thenReturn(userResource);
         when(userResource.toRepresentation()).thenReturn(userRepresentation1);
 
-        UserInfo result = keycloakUserService.getUserInfo(USER_ID);
+        PlayerInfo result = keycloakUserService.getUserInfo(USER_ID);
 
         assertEquals(result.getEmail(), email1);
         assertEquals(result.getUsername(), username1);
-        assertEquals(result.getFirstName(), firstName1);
-        assertEquals(result.getLastName(), lastName1);
     }
 
     @Test

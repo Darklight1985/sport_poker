@@ -3,8 +3,7 @@ package ru.poker.sportpoker.utils;
 import org.keycloak.representations.idm.UserRepresentation;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
-import ru.poker.sportpoker.dto.UserInfo;
-import ru.poker.sportpoker.dto.UserShortInfo;
+import ru.poker.sportpoker.dto.PlayerInfo;
 
 import java.util.UUID;
 
@@ -23,8 +22,8 @@ public class TestUtils {
         return gameRoom;
     }
 
-    public static UserInfo getUserInfo(UUID userId) {
-        return UserInfo.builder()
+    public static PlayerInfo getUserInfo(UUID userId) {
+        return PlayerInfo.builder()
                 .userId(userId)
                 .build();
     }

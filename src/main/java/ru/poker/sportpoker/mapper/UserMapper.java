@@ -4,8 +4,9 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import ru.poker.sportpoker.dto.UserInfo;
-import ru.poker.sportpoker.dto.UserShortInfo;
+import ru.poker.sportpoker.dto.PlayerInfo;
+import ru.poker.sportpoker.dto.PlayerShortInfo;
+import ru.poker.sportpoker.dto.UserView;
 
 import java.util.Collection;
 import java.util.Set;
@@ -14,9 +15,12 @@ import java.util.Set;
 public interface UserMapper {
 
     @Mapping(target = "userId", source = "id")
-    UserInfo getUserInfo(UserRepresentation userRepresentation);
+    PlayerInfo getUserInfo(UserRepresentation userRepresentation);
 
-    UserShortInfo getUserShortInfo(UserInfo userInfo);
+    PlayerShortInfo getUserShortInfo(PlayerInfo playerInfo);
 
-    Set<UserShortInfo> getUserShortInfoList(Collection<UserInfo> userInfos);
+    Set<PlayerShortInfo> getUserShortInfoList(Collection<PlayerInfo> playerInfos);
+
+    @Mapping(target = "userId", source = "id")
+    UserView getUserView(UserRepresentation userRepresentation);
 }

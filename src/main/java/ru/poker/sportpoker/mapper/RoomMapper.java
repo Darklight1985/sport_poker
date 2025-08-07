@@ -6,7 +6,7 @@ import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.GameRoomShortView;
 import ru.poker.sportpoker.dto.GameRoomView;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
-import ru.poker.sportpoker.dto.UserShortInfo;
+import ru.poker.sportpoker.dto.PlayerShortInfo;
 
 import java.util.List;
 import java.util.Set;
@@ -19,7 +19,7 @@ public interface RoomMapper {
     @Mapping(target = "creator", source = "creator")
     @Mapping(target = "players", source = "players")
     @Mapping(target = "name", source = "room.name")
-    GameRoomView getView(GameRoom room, UserShortInfo creator, Set<UserShortInfo> players);
+    GameRoomView getView(GameRoom room, PlayerShortInfo creator, Set<PlayerShortInfo> players);
 
     @Mapping(target = "roomId", source = "room.id")
     @Mapping(target = "name", source = "room.name")
