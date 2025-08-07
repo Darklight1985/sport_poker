@@ -1,6 +1,8 @@
 package ru.poker.sportpoker.service;
 
 import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -9,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +31,9 @@ public class MinioFileService {
     @PostConstruct
     private void init() {
         createBucket(bucketAvatar);
+    }
+
+    public record MinioFileResponse(String contentType, InputStreamResource inputStreamResource) {
     }
 
     public void createBucket(String bucketName) {
@@ -55,5 +61,20 @@ public class MinioFileService {
             log.error(e.getMessage());
             throw new RuntimeException("Ошибка сохранения файла");
         }
+    }
+
+    public MinioFileResponse download(String name) {
+        GetObjectResponse response;
+        try {
+            response = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(bucketAvatar)
+                    .object(name)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка выгрузки файла: " + name);
+        }
+
+        String contentType = response.headers().get("content-type");
+        return new MinioFileResponse(contentType, new InputStreamResource(response));
     }
 }

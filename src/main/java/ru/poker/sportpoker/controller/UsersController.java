@@ -16,13 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import ru.poker.sportpoker.dto.UploadFileResponse;
-import ru.poker.sportpoker.dto.UserLoginDto;
-import ru.poker.sportpoker.dto.UserRegistrationDto;
 import ru.poker.sportpoker.dto.UserView;
-import ru.poker.sportpoker.service.KeycloakUserService;
+import ru.poker.sportpoker.service.MinioFileService;
 import ru.poker.sportpoker.service.UserService;
-import ru.poker.sportpoker.validate.ValidationException;
-import ru.poker.sportpoker.validate.user.UserValidator;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -33,8 +29,6 @@ import java.util.UUID;
 @RequestMapping("/api/user")
 public class UsersController {
 
-    private final KeycloakUserService keycloakUserService;
-    private final UserValidator userValidator;
     private final UserService userService;
 
     @Operation(description = "Получение информации о текущем пользователе")
@@ -46,8 +40,9 @@ public class UsersController {
     @Operation(description = "Получение аватара пользователя")
     @GetMapping("{id}/avatar")
     public ResponseEntity<InputStreamResource> getAvatar(@PathVariable UUID id) {
-        return new ResponseEntity<>(null, getHeaders(
-                MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE)), HttpStatus.OK);
+        MinioFileService.MinioFileResponse content = userService.getAvatar(id);
+        return new ResponseEntity<>(content.inputStreamResource(), getHeaders(
+                MediaType.valueOf(content.contentType())), HttpStatus.OK);
     }
 
     @Operation(description = "Привязка аватара пользователю")

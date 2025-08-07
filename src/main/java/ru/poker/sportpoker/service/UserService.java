@@ -14,5 +14,5 @@ public interface UserService {
 
     UploadFileResponse uploadAvatar(UUID userId, MultipartFile file);
 
-    ResponseEntity<InputStreamResource> getAvatar(UUID id);
+    MinioFileService.MinioFileResponse getAvatar(UUID id);
 }
