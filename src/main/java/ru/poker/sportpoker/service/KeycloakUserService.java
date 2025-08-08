@@ -19,7 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.config.KeycloakProperties;
-import ru.poker.sportpoker.dto.UserInfo;
+import ru.poker.sportpoker.dto.PlayerInfo;
 import ru.poker.sportpoker.exception.UserRegistrationException;
 import ru.poker.sportpoker.mapper.UserMapper;
 
@@ -38,7 +38,7 @@ public class KeycloakUserService {
     private final UserMapper userMapper;
     private final Keycloak keycloak;
 
-    public void createUser(String username, String email, String password, String firstName, String lastName) {
+    public void createUser(String username, String email, String password) {
             UserRepresentation user = new UserRepresentation();
             user.setUsername(username);
             user.setEmail(email);
@@ -74,27 +74,29 @@ public class KeycloakUserService {
      * @param userIds Список идентификаторов пользователей
      * @return Список с информацией о пользователях
      */
-    public Set<UserInfo> getUsersInfo(Collection<UUID> userIds) {
-        Set<UserInfo> list = new HashSet<>();
+    public Set<PlayerInfo> getUsersInfo(Collection<UUID> userIds) {
+        Set<PlayerInfo> list = new HashSet<>();
             UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
 
             for (UUID userId : userIds) {
                 UserResource userResource = usersResource.get(String.valueOf(userId));
                 UserRepresentation userRepresentation = userResource.toRepresentation();
-                UserInfo userInfo = userMapper.getUserInfo(userRepresentation);
+                PlayerInfo playerInfo = userMapper.getUserInfo(userRepresentation);
 
-                list.add(userInfo);
+                list.add(playerInfo);
             }
         return list;
     }
 
 
-    public UserInfo getUserInfo(UUID userId) {
-            UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
-            UserResource userResource = usersResource.get(String.valueOf(userId));
-            UserRepresentation userRepresentation = userResource.toRepresentation();
+    public PlayerInfo getUserInfo(UUID userId) {
+            return userMapper.getUserInfo(getUserRepresentation(userId));
+    }
 
-            return userMapper.getUserInfo(userRepresentation);
+    public UserRepresentation getUserRepresentation(UUID userId) {
+        UsersResource usersResource = keycloak.realm(keycloakProperties.getRealm()).users();
+        UserResource userResource = usersResource.get(String.valueOf(userId));
+        return userResource.toRepresentation();
     }
 
     /**

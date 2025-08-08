@@ -1,5 +1,6 @@
 package ru.poker.sportpoker.config;
 
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -8,7 +9,6 @@ import ru.poker.sportpoker.validate.ValidationException;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
         List<String> errors = ex.getBindingResult()
                 .getAllErrors()
                 .stream()
-                .map(e -> e.getDefaultMessage())
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.toList());
         return ResponseEntity.badRequest().body(errors);
     }

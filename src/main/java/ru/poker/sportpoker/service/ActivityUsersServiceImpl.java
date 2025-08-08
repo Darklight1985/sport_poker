@@ -1,6 +1,5 @@
 package ru.poker.sportpoker.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +7,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
-import ru.poker.sportpoker.dto.UserInfo;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.event.GameEndEvent;
 import ru.poker.sportpoker.repository.GameRoomRepository;

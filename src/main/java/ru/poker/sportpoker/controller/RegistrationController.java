@@ -30,7 +30,7 @@ public class RegistrationController {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
             throw new ValidationException(bindingResult);
         }
-        keycloakUserService.createUser(dto.getUsername(), dto.getEmail(), dto.getPassword(), dto.getFirstName(), dto.getLastName());
+        keycloakUserService.createUser(dto.getUsername(), dto.getEmail(), dto.getPassword());
         return ResponseEntity.ok("User registered");
     }
 

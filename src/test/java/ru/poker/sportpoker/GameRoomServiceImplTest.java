@@ -88,8 +88,8 @@ public class GameRoomServiceImplTest {
 
     private final GameRoom gameRoom = TestUtils.getGameRoom(ROOM_ID, CREATOR_ID);
     private final GameRoom emptyGameRoom = TestUtils.getGameRoom(ROOM_ID, CREATOR_ID);
-    private final UserInfo creatorInfo = TestUtils.getUserInfo(CREATOR_ID);
-    private final UserInfo playerInfo = TestUtils.getUserInfo(PLAYER_ID);
+    private final PlayerInfo creatorInfo = TestUtils.getUserInfo(CREATOR_ID);
+    private final PlayerInfo playerInfo = TestUtils.getUserInfo(PLAYER_ID);
     private final GameRoomPlayer gameRoomPlayer = TestUtils.getGameRoomPlayer(PLAYER_ID, gameRoom);
 
     private ArgumentCaptor<GameRoomPlayer> gameRoomPlayerArgumentCaptor = ArgumentCaptor.forClass(GameRoomPlayer.class);
