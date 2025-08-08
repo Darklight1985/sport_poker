@@ -47,6 +47,9 @@ services:
       POKER_USER: "${POKER_USER}"
       POKER_BASE_PASS: "${POKER_BASE_PASS}"
       KEYCLOAK_ADDRESS: "${KEYCLOAK_ADDRESS}"
+      MINIO_ADDRESS: "${MINIO_ADDRESS}"
+      MINIO_USER: "${MINIO_USER}"
+      MINIO_PASSWORD: "${MINIO_PASSWORD}"
     networks:
       - poker_net
 
