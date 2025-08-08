@@ -42,6 +42,7 @@ public class MinioFileService {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
             }
         } catch (Exception e) {
+            log.error("Ошибка при создании bucket в MinIO {}", e.getMessage());
             throw new RuntimeException("Ошибка при создании bucket в MinIO", e);
         }
     }
