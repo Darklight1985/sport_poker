@@ -18,7 +18,7 @@ pipeline {
         MINIO_USER = credentials('minio-user')
         MINIO_PASSWORD = credentials('minio-password')
         MINIO_ACCESS_KEY = credentials('minio-access-key')
-        MINIO_SECRET_KEY= credentials('minio-secret-key')
+        MINIO_SECRET_KEY = credentials('minio-secret-key')
     }
 
     stages {
