@@ -13,10 +13,7 @@ import ru.poker.sportpoker.dto.UserView;
 import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.AvatarRepository;
 
-import java.util.Objects;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +25,6 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final AvatarRepository avatarRepository;
 
-    private static final long MAX_SIZE_AVATAR = 8388608L;
-    private final Pattern pattern = Pattern.compile("([^\s]+(\\.(?i)(jpe?g|png|gif|bmp))$)");
-
     @Override
     public UserView getUser() {
         String userIdStr = keycloakUserService.getCurrentUser();
@@ -41,14 +35,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UploadFileResponse uploadAvatar(UUID userId, MultipartFile file) {
-        if (file.getSize() > MAX_SIZE_AVATAR) {
-            throw new RuntimeException("Максимальный размер фото не более 8 Мб");
-        }
-        Matcher matcher = pattern.matcher(Objects.requireNonNull(file.getOriginalFilename()));
-        if (!matcher.find()) {
-            throw new RuntimeException("Не подходящий формат аватара");
-        }
-
         String fileName;
         String minioPathToFile;
 

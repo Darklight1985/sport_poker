@@ -50,6 +50,22 @@ services:
     networks:
       - poker_net
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "${MINIO_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_PASSWORD}"
+      ACCESS_KEY: "${MINIO_ACCESS_KEY}"
+      SECRET_KEY: "${MINIO_SECRET_KEY}"
+    volumes:
+      - minio_data:/data
+      - minio_config:/root/.minio
+    command: server /data --console-address ":9001"
+
 networks:
   poker_net:
     external: true
@@ -57,3 +73,5 @@ networks:
 volumes:
   poker_psql_vol:
     external: true
+  minio_data:
+  minio_config:
