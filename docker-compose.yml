@@ -65,6 +65,8 @@ services:
       - minio_data:/data
       - minio_config:/root/.minio
     command: server /data --console-address ":9001"
+    networks:
+      - poker_net
 
 networks:
   poker_net:
