@@ -15,6 +15,7 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, UUID>, JpaSp
     @Query(value = """
             select gr from GameRoom gr
              left join fetch gr.gameRoomPlayers
+             where gr.id = :roomId
             """)
     Optional<GameRoom> findGameRoomWithPlayers(UUID roomId);
 

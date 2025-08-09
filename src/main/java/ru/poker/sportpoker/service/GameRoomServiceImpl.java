@@ -1,12 +1,15 @@
 package ru.poker.sportpoker.service;
 
 import io.jsonwebtoken.JwtException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.poker.sportpoker.domain.GameRoom;
@@ -19,6 +22,7 @@ import ru.poker.sportpoker.repository.GameRoomPlayerRepository;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.repository.specification.GameRoomSpecification;
 import ru.poker.sportpoker.utils.TokenUtils;
+import ru.poker.sportpoker.validate.ValidationException;
 
 import java.util.Set;
 import java.util.UUID;
@@ -79,10 +83,16 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public void updateGameRoom(UpdateGameRoomDto dto) {
         GameRoom gameRoomOld = gameRoomRepository.findById(dto.getId())
                 .orElseThrow(() -> new NotFoundException(dto.getId().toString()));
         roomMapper.updateGameRoom(gameRoomOld, dto);
+        gameRoomRepository.save(gameRoomOld);
     }
 
     @Override
@@ -114,6 +124,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> joinRoomByPassword(UUID roomId) {
         return joinRoom(roomId);
     }
@@ -123,6 +134,10 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(roomId)
                 .orElseThrow(() -> new NotFoundException(roomId.toString()));
+        if (!StatusGame.PREP.equals(gameRoomOld.getStatus()) ) {
+            throw new ValidationException("Комната уже не в стадии подготовки", null);
+        }
+
         GameRoomPlayer gameRoomPlayer = new GameRoomPlayer();
         gameRoomPlayer.setPlayersId(UUID.fromString(userId));
         gameRoomPlayer.setGameRoom(gameRoomOld);
@@ -136,6 +151,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public boolean readyToGame(UUID gameRoomId) {
         String userId = keycloakUserService.getCurrentUser();
 

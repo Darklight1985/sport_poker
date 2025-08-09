@@ -17,6 +17,12 @@ public class ValidationException extends RuntimeException {
     @Getter
     private final transient BindingResult bindingResult;
 
+
+    public ValidationException(String message, BindingResult bindingResult) {
+        super(message);
+        this.bindingResult = bindingResult;
+    }
+
     public ValidationException(BindingResult bindingResult) {
         super(bindingResult.getAllErrors().toString());
         this.bindingResult = bindingResult;
