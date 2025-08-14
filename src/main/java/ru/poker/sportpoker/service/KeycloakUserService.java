@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.config.KeycloakProperties;
 import ru.poker.sportpoker.dto.PlayerInfo;
+import ru.poker.sportpoker.exception.AuthentificationException;
 import ru.poker.sportpoker.exception.UserRegistrationException;
 import ru.poker.sportpoker.mapper.UserMapper;
 
@@ -134,8 +135,9 @@ public class KeycloakUserService {
                 return keycloak.tokenManager().getAccessToken();
             }
         } catch (Exception e) {
+            log.debug(e.getMessage());
             e.printStackTrace(); // Выведет подробности
-            throw new RuntimeException("Invalid username or password", e);
+            throw new AuthentificationException("Invalid username or password");
         }
     }
 
