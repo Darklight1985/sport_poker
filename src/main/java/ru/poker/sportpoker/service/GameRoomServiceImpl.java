@@ -164,7 +164,44 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         GameRoomPlayer gameRoomPlayer = gameRoomOld.getPlayer(UUID.fromString(userId));
         gameRoomPlayer.setReady(true);
-        GameRoom gameRoom = gameRoomPlayer.getGameRoom();
+        return checkRoomToGame(gameRoomOld);
+    }
+
+
+    @Override
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
+    @Transactional
+    public void leftRoom() {
+        String userId = keycloakUserService.getCurrentUser();
+        removePlayer(UUID.fromString(userId));
+    }
+
+    @Override
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
+    @Transactional
+    public void kickFromRoom(UUID playerId) {
+        removePlayer(playerId);
+    }
+
+    private void removePlayer(UUID playerId) {
+        GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
+                .orElseThrow(NotFoundException::new);
+
+        gameRoomPlayer.deleteGameRoom();
+        gameRoomPlayerRepository.delete(gameRoomPlayer);
+
+        checkRoomToGame(gameRoomPlayer.getGameRoom());
+    }
+
+    private boolean checkRoomToGame(GameRoom gameRoom) {
         boolean readyToGame = true;
         Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
         for (GameRoomPlayer player : players) {
@@ -174,32 +211,9 @@ public class GameRoomServiceImpl implements GameRoomService {
             }
         }
         if (readyToGame) {
-            gameRoomOld.setStatus(StatusGame.PLAY);
-            activityUserService.activeRoom(gameRoomOld);
+            gameRoom.setStatus(StatusGame.PLAY);
+            activityUserService.activeRoom(gameRoom);
         }
         return readyToGame;
-    }
-
-    @Override
-    @Transactional
-    //TODO необходимо написать условие на удаление, что если комната уже в игре то удалить нельзя или выйти самому
-    public void leftRoom() {
-        String userId = keycloakUserService.getCurrentUser();
-        removePlayer(UUID.fromString(userId));
-    }
-
-    @Override
-    @Transactional
-    public void kickFromRoom(UUID playerId) {
-        removePlayer(playerId);
-    }
-
-    private void removePlayer(UUID playerId) {
-        //TODO после удаления необходимо проверять что может игроки все активны и игру можно начинать
-        GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
-                .orElseThrow(NotFoundException::new);
-
-        gameRoomPlayer.deleteGameRoom();
-        gameRoomPlayerRepository.delete(gameRoomPlayer);
     }
 }
