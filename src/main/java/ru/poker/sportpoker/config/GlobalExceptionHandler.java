@@ -4,6 +4,7 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import ru.poker.sportpoker.exception.AuthentificationException;
 import ru.poker.sportpoker.exception.UserRegistrationException;
 import ru.poker.sportpoker.validate.ValidationException;
 
@@ -15,6 +16,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserRegistrationException.class)
     public ResponseEntity<String> handleBadRequest(UserRegistrationException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(AuthentificationException.class)
+    public ResponseEntity<String> handleBadRequest(AuthentificationException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 
