@@ -30,6 +30,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     implementation 'org.springframework.retry:spring-retry:2.0.12'
 
     implementation("org.keycloak:keycloak-admin-client:22.0.1")
