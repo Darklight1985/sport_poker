@@ -13,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
@@ -37,6 +39,7 @@ import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource("classpath:application-test.properties")
 @Sql(scripts = "classpath:repository/gameRoom/manyRooms.sql")
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @ExtendWith(MockitoExtension.class)
