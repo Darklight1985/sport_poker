@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/v3/api-docs/swagger-config").permitAll()
                         .requestMatchers("/webjars/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/room/join/**").hasRole("user")
                         .requestMatchers("/api/room/**").hasRole("user")
                         .requestMatchers("/api/user/**").hasRole("user")
