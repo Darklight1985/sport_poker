@@ -28,7 +28,7 @@ public class GameRoomPlayer {
     @Column(updatable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = true)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "game_room_id")
     private GameRoom gameRoom;
 

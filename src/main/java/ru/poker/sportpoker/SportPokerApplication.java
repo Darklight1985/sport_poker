@@ -3,10 +3,12 @@ package ru.poker.sportpoker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import ru.poker.sportpoker.config.SecurityConfig;
 
 @SpringBootApplication
+@EnableRetry
 //@Import(SecurityConfig.class)
 public class SportPokerApplication {
 

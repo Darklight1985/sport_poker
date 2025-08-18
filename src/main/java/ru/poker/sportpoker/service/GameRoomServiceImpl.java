@@ -1,12 +1,15 @@
 package ru.poker.sportpoker.service;
 
 import io.jsonwebtoken.JwtException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.poker.sportpoker.domain.GameRoom;
@@ -19,6 +22,7 @@ import ru.poker.sportpoker.repository.GameRoomPlayerRepository;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.repository.specification.GameRoomSpecification;
 import ru.poker.sportpoker.utils.TokenUtils;
+import ru.poker.sportpoker.validate.ValidationException;
 
 import java.util.Set;
 import java.util.UUID;
@@ -79,19 +83,29 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public void updateGameRoom(UpdateGameRoomDto dto) {
         GameRoom gameRoomOld = gameRoomRepository.findById(dto.getId())
                 .orElseThrow(() -> new NotFoundException(dto.getId().toString()));
         roomMapper.updateGameRoom(gameRoomOld, dto);
+        gameRoomRepository.save(gameRoomOld);
     }
 
     @Override
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public void deleteGameRoom(UUID id) {
         GameRoom gameRoomOld = gameRoomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id.toString()));
         gameRoomRepository.delete(gameRoomOld);
     }
-
 
     @Override
     public String getLinkToRoom(UUID id) {
@@ -102,6 +116,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public ResponseEntity<?> joinRoomByToken(String token) {
         String roomId;
         try {
@@ -114,6 +133,12 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
+    @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public ResponseEntity<?> joinRoomByPassword(UUID roomId) {
         return joinRoom(roomId);
     }
@@ -123,6 +148,10 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(roomId)
                 .orElseThrow(() -> new NotFoundException(roomId.toString()));
+        if (!StatusGame.PREP.equals(gameRoomOld.getStatus()) ) {
+            throw new ValidationException("Комната уже не в стадии подготовки", null);
+        }
+
         GameRoomPlayer gameRoomPlayer = new GameRoomPlayer();
         gameRoomPlayer.setPlayersId(UUID.fromString(userId));
         gameRoomPlayer.setGameRoom(gameRoomOld);
@@ -136,6 +165,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public boolean readyToGame(UUID gameRoomId) {
         String userId = keycloakUserService.getCurrentUser();
 
@@ -144,7 +178,45 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         GameRoomPlayer gameRoomPlayer = gameRoomOld.getPlayer(UUID.fromString(userId));
         gameRoomPlayer.setReady(true);
+        return checkRoomToGame(gameRoomOld);
+    }
+
+
+    @Override
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
+    @Transactional
+    public void leftRoom() {
+        String userId = keycloakUserService.getCurrentUser();
+        removePlayer(UUID.fromString(userId));
+    }
+
+    @Override
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
+    @Transactional
+    public void kickFromRoom(UUID playerId) {
+        removePlayer(playerId);
+    }
+
+    private void removePlayer(UUID playerId) {
+        GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
+                .orElseThrow(NotFoundException::new);
+
         GameRoom gameRoom = gameRoomPlayer.getGameRoom();
+        gameRoomPlayer.deleteGameRoom();
+        gameRoomPlayerRepository.delete(gameRoomPlayer);
+
+        checkRoomToGame(gameRoom);
+    }
+
+    private boolean checkRoomToGame(GameRoom gameRoom) {
         boolean readyToGame = true;
         Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
         for (GameRoomPlayer player : players) {
@@ -154,32 +226,9 @@ public class GameRoomServiceImpl implements GameRoomService {
             }
         }
         if (readyToGame) {
-            gameRoomOld.setStatus(StatusGame.PLAY);
-            activityUserService.activeRoom(gameRoomOld);
+            gameRoom.setStatus(StatusGame.PLAY);
+            activityUserService.activeRoom(gameRoom);
         }
         return readyToGame;
-    }
-
-    @Override
-    @Transactional
-    //TODO необходимо написать условие на удаление, что если комната уже в игре то удалить нельзя или выйти самому
-    public void leftRoom() {
-        String userId = keycloakUserService.getCurrentUser();
-        removePlayer(UUID.fromString(userId));
-    }
-
-    @Override
-    @Transactional
-    public void kickFromRoom(UUID playerId) {
-        removePlayer(playerId);
-    }
-
-    private void removePlayer(UUID playerId) {
-        //TODO после удаления необходимо проверять что может игроки все активны и игру можно начинать
-        GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
-                .orElseThrow(NotFoundException::new);
-
-        gameRoomPlayer.deleteGameRoom();
-        gameRoomPlayerRepository.delete(gameRoomPlayer);
     }
 }

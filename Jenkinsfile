@@ -88,7 +88,6 @@ pipeline {
             steps {
                 script {
                     docker.build('sport_poker:latest')
-
                 }
             }
         }

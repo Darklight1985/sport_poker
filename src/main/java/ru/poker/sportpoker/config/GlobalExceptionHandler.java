@@ -8,6 +8,7 @@ import ru.poker.sportpoker.exception.AuthentificationException;
 import ru.poker.sportpoker.exception.UserRegistrationException;
 import ru.poker.sportpoker.validate.ValidationException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,11 +27,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<List<String>> handleBadRequest(ValidationException ex) {
-        List<String> errors = ex.getBindingResult()
-                .getAllErrors()
-                .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
+        List<String> errors = new ArrayList<>();
+        errors.add(ex.getMessage());
+        if (ex.getBindingResult() != null) {
+            errors = ex.getBindingResult()
+                    .getAllErrors()
+                    .stream()
+                    .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                    .collect(Collectors.toList());
+        }
         return ResponseEntity.badRequest().body(errors);
     }
 }
