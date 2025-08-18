@@ -96,12 +96,16 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public void deleteGameRoom(UUID id) {
         GameRoom gameRoomOld = gameRoomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id.toString()));
         gameRoomRepository.delete(gameRoomOld);
     }
-
 
     @Override
     public String getLinkToRoom(UUID id) {
@@ -112,6 +116,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public ResponseEntity<?> joinRoomByToken(String token) {
         String roomId;
         try {
@@ -125,6 +134,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     @Transactional
+    @Retryable(
+            value = OptimisticLockException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public ResponseEntity<?> joinRoomByPassword(UUID roomId) {
         return joinRoom(roomId);
     }
@@ -195,10 +209,11 @@ public class GameRoomServiceImpl implements GameRoomService {
         GameRoomPlayer gameRoomPlayer = gameRoomPlayerRepository.findByPlayersId(playerId)
                 .orElseThrow(NotFoundException::new);
 
+        GameRoom gameRoom = gameRoomPlayer.getGameRoom();
         gameRoomPlayer.deleteGameRoom();
         gameRoomPlayerRepository.delete(gameRoomPlayer);
 
-        checkRoomToGame(gameRoomPlayer.getGameRoom());
+        checkRoomToGame(gameRoom);
     }
 
     private boolean checkRoomToGame(GameRoom gameRoom) {
