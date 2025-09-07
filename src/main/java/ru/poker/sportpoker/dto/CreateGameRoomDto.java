@@ -1,10 +1,12 @@
 package ru.poker.sportpoker.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.poker.sportpoker.enums.Exercises;
+
+import java.util.Set;
 
 @Schema(description = "ДТО, описывающий основную информацию для создания игровой комнаты")
 @Data
@@ -21,4 +23,7 @@ public class CreateGameRoomDto {
 
     @Schema(description = "Пароль от комнаты")
     private String password;
+
+    @Schema(description = "Упражнения")
+    private Set<Exercises> exercises;
 }
