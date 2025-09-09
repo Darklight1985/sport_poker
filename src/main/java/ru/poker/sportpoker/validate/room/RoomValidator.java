@@ -31,8 +31,8 @@ public class RoomValidator {
 
     public void validateCreateRoom(CreateGameRoomDto dto, BindingResult bindingResult) {
         roomCreateHandler.handle(bindingResult, dto);
-        roomCreateExistHandler.handle(bindingResult, dto);
         exercisesHandler.handle(bindingResult, dto.getExercises());
+        roomCreateExistHandler.handle(bindingResult, dto);
     }
 
     public void validateUpdateGameRoom(UpdateGameRoomDto dto, BindingResult bindingResult) {

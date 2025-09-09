@@ -4,10 +4,15 @@ import org.keycloak.representations.idm.UserRepresentation;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
 import ru.poker.sportpoker.dto.PlayerInfo;
+import ru.poker.sportpoker.enums.Exercises;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class TestUtils {
+
+    private static final Set<Exercises> exercises = Set.of(Exercises.PULL_UPS, Exercises.PUSH_UP, Exercises.SQUAT, Exercises.ROPE_CLIMB);
 
     public static GameRoom getGameRoom(UUID roomId) {
         GameRoom gameRoom = new GameRoom();
@@ -19,6 +24,7 @@ public class TestUtils {
         GameRoom gameRoom = new GameRoom();
         gameRoom.setCreator(creatorId);
         gameRoom.setId(roomId);
+        gameRoom.setExercises(new HashSet<>(exercises));
         return gameRoom;
     }
 
