@@ -1,5 +1,6 @@
 package ru.poker.sportpoker;
 
+import com.google.common.collect.Sets;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
 import ru.poker.sportpoker.dto.*;
+import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.mapper.RoomMapper;
 import ru.poker.sportpoker.mapper.UserMapper;
@@ -91,6 +93,7 @@ public class GameRoomServiceImplTest {
     private final PlayerInfo creatorInfo = TestUtils.getUserInfo(CREATOR_ID);
     private final PlayerInfo playerInfo = TestUtils.getUserInfo(PLAYER_ID);
     private final GameRoomPlayer gameRoomPlayer = TestUtils.getGameRoomPlayer(PLAYER_ID, gameRoom);
+    private final Set<Exercises> exercises = Set.of(Exercises.BURPEE, Exercises.DEADLIFT, Exercises.HANDSTAND, Exercises.BOX_JUMP);
 
     private ArgumentCaptor<GameRoomPlayer> gameRoomPlayerArgumentCaptor = ArgumentCaptor.forClass(GameRoomPlayer.class);
 
@@ -109,6 +112,8 @@ public class GameRoomServiceImplTest {
             CreateGameRoomDto dto = new CreateGameRoomDto();
             dto.setName("Test Room");
             dto.setGameTime(1);
+            dto.setExercises(exercises);
+
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(USER_ID));
             when(gameRoomRepository.save(gameRoomCaptor.capture())).thenReturn(emptyGameRoom);
             gameRoomService.createGameRoom(dto);
@@ -118,6 +123,7 @@ public class GameRoomServiceImplTest {
             assertEquals(USER_ID, gameRoomAfterSave.getCreator());
             assertEquals(StatusGame.PREP, gameRoomAfterSave.getStatus());
             assertNotNull(gameRoomAfterSave.getGameTime());
+            assertTrue(Sets.difference(exercises, gameRoomAfterSave.getExercises()).isEmpty());
 
             Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
             assertEquals(1, players.size());
@@ -166,9 +172,12 @@ public class GameRoomServiceImplTest {
             UpdateGameRoomDto dto = new UpdateGameRoomDto();
             dto.setId(ROOM_ID);
             dto.setName("Updated Room");
+            dto.setExercises(exercises);
+
             when(gameRoomRepository.findById(dto.getId())).thenReturn(Optional.of(gameRoom));
             gameRoomService.updateGameRoom(dto);
             assertEquals("Updated Room", gameRoom.getName());
+            assertTrue(Sets.difference(exercises, gameRoom.getExercises()).isEmpty());
         }
 
         @Test

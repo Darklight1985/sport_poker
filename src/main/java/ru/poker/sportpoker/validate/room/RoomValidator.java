@@ -6,9 +6,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.utils.TokenUtils;
 import ru.poker.sportpoker.validate.errors.ErrorCodes;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -25,9 +27,11 @@ public class RoomValidator {
     private final RoomActiveHandler roomActiveHandler;
     private final PlayerHandler playerHandler;
     private final PasswordRoomHandler passwordRoomHandler;
+    private final ExercisesHandler exercisesHandler;
 
     public void validateCreateRoom(CreateGameRoomDto dto, BindingResult bindingResult) {
         roomCreateHandler.handle(bindingResult, dto);
+        exercisesHandler.handle(bindingResult, dto.getExercises());
         roomCreateExistHandler.handle(bindingResult, dto);
     }
 
@@ -35,6 +39,10 @@ public class RoomValidator {
         userIsCreatorHandler.handle(bindingResult, dto.getId());
         roomUpdateHandler.handle(bindingResult, dto);
         roomActiveHandler.handle(bindingResult, dto.getId());
+        Set<Exercises> exercises = dto.getExercises();
+        if (exercises != null) {
+            exercisesHandler.handle(bindingResult, exercises);
+        }
     }
 
     public void validateGenerateLinkToGameRoom(UUID roomId, BindingResult bindingResult) {

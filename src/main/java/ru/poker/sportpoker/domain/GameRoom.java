@@ -8,6 +8,7 @@ import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.*;
 import org.springframework.context.ApplicationEventPublisher;
+import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.event.GameEndEvent;
 
@@ -88,6 +89,12 @@ public class GameRoom {
     @OneToMany(mappedBy = "gameRoom", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OptimisticLock(excluded = false)
     private Set<GameRoomPlayer> gameRoomPlayers = new HashSet<>();
+
+    @ElementCollection(targetClass = Exercises.class)
+    @CollectionTable(name = "room_exercises", joinColumns = @JoinColumn(name = "game_room_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "exercise")
+    private Set<Exercises> exercises = new HashSet<>();
 
     public GameRoomPlayer getPlayer (UUID playerId) {
         for (GameRoomPlayer gameRoomPlayer : gameRoomPlayers) {

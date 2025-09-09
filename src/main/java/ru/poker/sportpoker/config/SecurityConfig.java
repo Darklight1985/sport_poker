@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/room/join/**").hasRole("user")
                         .requestMatchers("/api/room/**").hasRole("user")
                         .requestMatchers("/api/user/**").hasRole("user")
+                        .requestMatchers("/api/enums/**").hasRole("user")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

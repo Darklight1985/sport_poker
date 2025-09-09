@@ -17,12 +17,14 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
+import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.repository.GameRoomRepository;
 import ru.poker.sportpoker.service.KeycloakUserService;
 import ru.poker.sportpoker.utils.CommonValidationTestUtil;
 import ru.poker.sportpoker.utils.TokenUtils;
 import ru.poker.sportpoker.validate.errors.ErrorCodes;
+import ru.poker.sportpoker.validate.room.ExercisesHandler;
 import ru.poker.sportpoker.validate.room.PasswordRoomHandler;
 import ru.poker.sportpoker.validate.room.PlayerHandler;
 import ru.poker.sportpoker.validate.room.RoomActiveHandler;
@@ -36,7 +38,9 @@ import ru.poker.sportpoker.validate.room.UserIsPlayerOrCreateRoomHandler;
 import ru.poker.sportpoker.validate.room.UserIsPlayerRoomHandler;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -61,6 +65,7 @@ public class RoomValidatorTest {
     private RoomActiveHandler roomActiveHandler;
     private PlayerHandler playerHandler;
     private PasswordRoomHandler passwordRoomHandler;
+    private ExercisesHandler exercisesHandler;
 
     private TokenUtils tokenUtils;
 
@@ -75,6 +80,7 @@ public class RoomValidatorTest {
     private static final String USER_ID = UUID.randomUUID().toString();
     private final List<StatusGame> statusGameList = List.of(StatusGame.PREP, StatusGame.PLAY);
     private final List<StatusGame> statusGameList2 = List.of(StatusGame.PLAY, StatusGame.END);
+    private final Set<Exercises> exercises = Set.of(Exercises.BURPEE, Exercises.DEADLIFT, Exercises.HANDSTAND, Exercises.BOX_JUMP);
 
 
     @BeforeEach
@@ -89,10 +95,11 @@ public class RoomValidatorTest {
         roomActiveHandler = new RoomActiveHandler(gameRoomRepository);
         playerHandler = new PlayerHandler(gameRoomRepository, keycloakUserService);
         passwordRoomHandler = new PasswordRoomHandler(gameRoomRepository);
+        exercisesHandler = new ExercisesHandler();
 
         roomValidator = new RoomValidator(roomCreateHandler, roomCreateExistHandler, roomUpdateHandler,
                 userIsCreatorHandler, userIsPlayerHandler, userIsPlayerOrCreateRoomHandler, userIsPlayerRoomHandler,
-                roomActiveHandler, playerHandler, passwordRoomHandler);
+                roomActiveHandler, playerHandler, passwordRoomHandler, exercisesHandler);
     }
 
     @Nested
@@ -106,11 +113,12 @@ public class RoomValidatorTest {
             createGameRoomDto.setName(ROOM_NAME);
             createGameRoomDto.setGameTime(GAME_TIME);
             createGameRoomDto.setPassword(PASSWORD);
+            createGameRoomDto.setExercises(exercises);
         }
 
         @Test
         @DisplayName("Если пользователь задал корректно все данные, создание комнаты пройдет успешно")
-        public void validateForRegisterUser() {
+        public void validateForCreateRoom () {
             Mockito.when(keycloakUserService.getCurrentUser()).thenReturn(USER_ID);
             Mockito.when(gameRoomRepository.userHasRoom(UUID.fromString(USER_ID), statusGameList)).thenReturn(false);
             Mockito.when(gameRoomRepository.existsByName(ROOM_NAME)).thenReturn(false);
@@ -120,7 +128,7 @@ public class RoomValidatorTest {
 
         @ParameterizedTest(name = "Если {0}, то будет добавлена ошибка с соответствующим кодом")
         @MethodSource("provideDataForConstraintTests")
-        void validateForLoginUser (Consumer<CreateGameRoomDto> consumer, String errorCode) {
+        void validateForCreateRoom (Consumer<CreateGameRoomDto> consumer, String errorCode) {
             consumer.accept(createGameRoomDto);
             roomValidator.validateCreateRoom(createGameRoomDto, bindingResult);
             Assertions.assertEquals(1, bindingResult.getAllErrors().size());
@@ -141,6 +149,14 @@ public class RoomValidatorTest {
                             createArg(dto -> dto.setName(""))), ErrorCodes.FIELD_IS_NULL),
                     Arguments.of(Named.of("задать пробельную строку вместе пароля",
                             createArg(dto -> dto.setName("   "))), ErrorCodes.FIELD_IS_NULL),
+                    Arguments.of(Named.of("задать null вместо списка упражнений",
+                            createArg(dto -> dto.setExercises(null))), ErrorCodes.FIELD_IS_NULL),
+                    Arguments.of(Named.of("задать пустую коллекцию вместо списка упражнений",
+                            createArg(dto -> dto.setExercises(Collections.emptySet()))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
+                    Arguments.of(Named.of("задать больше 4 упражнений",
+                            createArg(dto -> dto.setExercises(Set.of(Exercises.BURPEE, Exercises.DEADLIFT, Exercises.HANDSTAND, Exercises.BOX_JUMP, Exercises.PULL_UPS)))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
+                    Arguments.of(Named.of("задать меньше 4 упражнений",
+                            createArg(dto -> dto.setExercises(Set.of(Exercises.BURPEE, Exercises.DEADLIFT, Exercises.HANDSTAND)))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
                     Arguments.of(Named.of("задать короткую строку для username",
                             createArg(dto -> dto.setGameTime(2))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
                     Arguments.of(Named.of("задать длинную строку для username",
@@ -229,6 +245,12 @@ public class RoomValidatorTest {
                             createArg(dto -> dto.setName("   "))), ErrorCodes.FIELD_IS_BLANK),
                     Arguments.of(Named.of("задать слишком мало времени для игры",
                             createArg(dto -> dto.setGameTime(2))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
+                    Arguments.of(Named.of("задать пустую коллекцию вместо списка упражнений",
+                            createArg(dto -> dto.setExercises(Collections.emptySet()))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
+                    Arguments.of(Named.of("задать больше 4 упражнений",
+                            createArg(dto -> dto.setExercises(Set.of(Exercises.BURPEE, Exercises.DEADLIFT, Exercises.HANDSTAND, Exercises.BOX_JUMP, Exercises.PULL_UPS)))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
+                    Arguments.of(Named.of("задать меньше 4 упражнений",
+                            createArg(dto -> dto.setExercises(Set.of(Exercises.BURPEE, Exercises.DEADLIFT, Exercises.HANDSTAND)))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION),
                     Arguments.of(Named.of("задать слишком много времени для игры",
                             createArg(dto -> dto.setGameTime(61))), ErrorCodes.VALUE_CONSTRAINT_VIOLATION)
             );
