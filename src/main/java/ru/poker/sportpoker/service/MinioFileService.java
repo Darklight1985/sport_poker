@@ -27,6 +27,9 @@ public class MinioFileService {
     @Value("${minio.bucket.avatars}")
     private String bucketAvatar;
 
+    @Value("${minio.bucket.cards}")
+    private String bucketCards;
+
     @PostConstruct
     private void init() {
         createBucket(bucketAvatar);
@@ -72,6 +75,21 @@ public class MinioFileService {
                     .build());
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выгрузки файла: " + name);
+        }
+
+        String contentType = response.headers().get("content-type");
+        return new MinioFileResponse(contentType, new InputStreamResource(response));
+    }
+
+    public MinioFileResponse downloadCard(String cardName, String suitName) {
+        GetObjectResponse response;
+        try {
+            response = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(bucketCards)
+                    .object(suitName + "/" + cardName)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка выгрузки карты: " + cardName);
         }
 
         String contentType = response.headers().get("content-type");
