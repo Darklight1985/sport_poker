@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +35,7 @@ public class MinioFileService {
     @PostConstruct
     private void init() {
         createBucket(bucketAvatar);
+        createCards(bucketCards);
     }
 
     public record MinioFileResponse(String contentType, InputStreamResource inputStreamResource) {
@@ -43,6 +46,37 @@ public class MinioFileService {
             boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
             if (!exists) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при создании bucket в MinIO {}", e.getMessage());
+            throw new RuntimeException("Ошибка при создании bucket в MinIO", e);
+        }
+    }
+
+    public void createCards(String bucketName) {
+        try {
+            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            if (!exists) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+
+                PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+                Resource[] resources = resolver.getResources("classpath:cards/*");
+
+                for (Resource resource : resources) {
+                    System.out.println(resource.getFilename());
+                    try {
+                        InputStream inputStream = resource.getInputStream();
+                        PutObjectArgs args = PutObjectArgs.builder()
+                                .object(resource.getFilename())
+                                .bucket(bucketCards)
+                                .stream(inputStream, inputStream.available(), -1)
+                                .build();
+                        minioClient.putObject(args);
+                    } catch (Exception e) {
+                        log.error(e.getMessage());
+                        throw new RuntimeException("Ошибка сохранения файла");
+                    }
+                }
             }
         } catch (Exception e) {
             log.error("Ошибка при создании bucket в MinIO {}", e.getMessage());
@@ -86,7 +120,7 @@ public class MinioFileService {
         try {
             response = minioClient.getObject(GetObjectArgs.builder()
                     .bucket(bucketCards)
-                    .object(suitName + "/" + cardName)
+                    .object(cardName + "_" + suitName)
                     .build());
         } catch (Exception e) {
             throw new RuntimeException("Ошибка выгрузки карты: " + cardName);
