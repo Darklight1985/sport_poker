@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        POKER_USER = credentials('poker-user') // Глобальная переменная
+        POKER_USER = credentials('poker-user')
         POKER_BASE_PASS = credentials('poker-base-pass')
         KEYCLOAK_DB_USER = credentials('keycloak-db-user')
         KEYCLOAK_DB_PASS = credentials('keycloak-db-pass')
@@ -14,7 +14,7 @@ pipeline {
         KEYCLOAK_PASS = credentials('keycloak-pass')
         CLIENT_SECRET = credentials('client-secret')
         USER_CLIENT_SECRET = credentials('user-client-secret')
-        KEYCLOAK_ADDRESS= credentials('keycloak-address')
+        KEYCLOAK_ADDRESS = credentials('keycloak-address')
         MINIO_USER = credentials('minio-user')
         MINIO_PASSWORD = credentials('minio-password')
         MINIO_ACCESS_KEY = credentials('minio-access-key')
@@ -23,64 +23,44 @@ pipeline {
     }
 
     stages {
-//         stage('SSH Key Scanning') {
-//             steps {
-//                 sh 'ssh-keyscan github.com >> ~/.ssh/known_hosts'
-//             }
-//         }
-//
-         stage('Checkout') {
-               steps {
-                   git url: 'https://github.com/Darklight1985/sport_poker.git', branch: 'develop'
-               }
-         }
+        stage('Debug') {
+            steps {
+                sh 'pwd'
+                sh 'ls -la'
+            }
+        }
 
-          stage('Debug') {
-               steps {
-                   sh 'pwd'
-                 sh 'ls -la'
-               }
-          }
+        stage('Check Docker') {
+            steps {
+                sh 'docker --version'
+                sh 'docker info'
+            }
+        }
 
-                  stage('Check Docker') {
-                      steps {
-                          sh 'docker --version'
-                          sh 'docker info'
-                      }
-                  }
+        stage('Prepare Environment') {
+            steps {
+                sh 'chmod +x ./gradlew'
+            }
+        }
 
-         stage('Prepare Environment') {
-                    steps {
-                        script {
-                            sh 'chmod +x ./gradlew'
-                        }
-                    }
-         }
-
-         stage('PreDeploy') {
-                     steps {
-                         script {
-                             sh """
-                             ls
-                             docker-compose up -d
-                             """
-                         }
-                     }
-         }
+        stage('PreDeploy') {
+            steps {
+                sh """
+                ls
+                docker-compose up -d
+                """
+            }
+        }
 
         stage('Build') {
             steps {
-                                    script {
-              sh './gradlew build -x test'
-            }
+                sh './gradlew build -x test'
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                   sh './gradlew test'
-                   }
+                sh './gradlew test'
             }
         }
 
@@ -94,19 +74,17 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                script {
-                    sh """
-                    ls
-                    docker-compose up -d
-                    """
-                }
+                sh """
+                ls
+                docker-compose up -d
+                """
             }
         }
     }
 
-   post {
-       always {
-           cleanWs()
-       }
-   }
+    post {
+        always {
+            cleanWs()
+        }
+    }
 }
