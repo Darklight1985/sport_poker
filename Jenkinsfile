@@ -29,11 +29,11 @@ pipeline {
 //             }
 //         }
 //
-//         stage('Checkout') {
-//             steps {
-//                 git url: "git@github.com:Darklight1985/sport_poker.git", branch: 'develop', credentialsId: "git"
-//             }
-//         }
+         stage('Checkout') {
+               steps {
+                   git url: 'https://github.com/Darklight1985/sport_poker.git', branch: 'develop'
+               }
+         }
 
           stage('Debug') {
                steps {
