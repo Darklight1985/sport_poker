@@ -10,8 +10,7 @@ public enum Suits {
     CLUBS("Трефы"),
     DIAMONDS("Бубны"),
     HEARTS("Червы"),
-    SPADES("Пики"),
-    BURPEE("Берпи");
+    SPADES("Пики");
 
     private final String description;
 }
