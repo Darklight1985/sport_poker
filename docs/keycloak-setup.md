@@ -116,6 +116,28 @@ docker compose -f docker-compose-local.yml up -d
 
 ---
 
+## 4.1. Отключение Required Actions по умолчанию
+
+Keycloak может автоматически назначать **Required Actions** (обязательные действия) новым пользователям — например, "Verify Email", "Update Password", "Update Profile". Если такие действия назначены, аутентификация через `password` grant будет завершаться с ошибкой:
+
+```
+{"error":"invalid_grant","error_description":"Account is not fully set up"}
+```
+
+Чтобы это исправить:
+
+1. Перейти в **Authentication** → **Required Actions**
+2. Снять галочку **"Set as default action"** у **всех** действий (особенно у "Verify Email")
+3. Нажать **Save**
+
+> **Важно**: Если пользователь уже создан и у него остались Required Actions, их необходимо снять вручную:
+> 1. Перейти в **Users** → выбрать пользователя
+> 2. Убрать все записи из поля **Required user actions**
+> 3. Установить **Email verified** = `ON`
+> 4. Нажать **Save**
+
+---
+
 ## 5. Настройка свойств приложения
 
 В `application.properties` (или через переменные окружения) должны быть указаны:
@@ -233,4 +255,5 @@ environment:
 | `403 Forbidden` на `/api/room/**` | Роль `user` отсутствует в токене | Проверить маппер ролей и назначение роли пользователю |
 | `Ошибка создания пользователя` | У `pokerClient` нет прав `manage-users` | Назначить service account роли (шаг 2) |
 | `Invalid username or password` при логине | Неверный `client-secret` для `userPokerClient` | Проверить `keycloak.credentials.user-secret` |
+| `invalid_grant: Account is not fully set up` | У пользователя есть незавершённые Required Actions | Снять default Required Actions в realm и очистить их у пользователя (шаг 4.1) |
 | JWT issuer mismatch | URL в настройках не совпадает с Keycloak | URL должен быть доступен и с сервера, и из браузера |

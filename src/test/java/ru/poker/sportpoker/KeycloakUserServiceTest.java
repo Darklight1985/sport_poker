@@ -113,8 +113,13 @@ public class KeycloakUserServiceTest {
             throw new RuntimeException(e);
         }
 
+        UserRepresentation createdUser = new UserRepresentation();
+        createdUser.setRequiredActions(java.util.List.of("VERIFY_EMAIL"));
+        when(userResource.toRepresentation()).thenReturn(createdUser);
+
         keycloakUserService.createUser(username, email, password);
         verify(userResource).resetPassword(any());
+        verify(userResource).update(any());
     }
 
     @Test
