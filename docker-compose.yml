@@ -51,7 +51,9 @@ services:
       MINIO_USER: "${MINIO_USER}"
       MINIO_PASSWORD: "${MINIO_PASSWORD}"
     networks:
-      - poker_net
+      poker_net:
+        aliases:
+          - sport-poker
 
   minio:
     image: minio/minio:latest
