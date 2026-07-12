@@ -38,8 +38,6 @@ services:
   sport_poker:
     container_name: sport_poker
     image: sport_poker:latest
-    ports:
-      - "8083:8083"
     environment:
       SPRING_PROFILES_ACTIVE: dev
       CLIENT_SECRET: "${CLIENT_SECRET}"
