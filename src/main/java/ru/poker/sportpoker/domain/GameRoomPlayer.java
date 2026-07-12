@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.UuidGenerator;
+import ru.poker.sportpoker.enums.Suits;
 
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Getter
@@ -36,6 +37,14 @@ public class GameRoomPlayer {
     private UUID playersId;
 
     private boolean ready;
+
+    private int score;
+
+    @Transient
+    private Card currentCard;
+
+    @Transient
+    private Map<Suits, Boolean> completedExercises; // Для отслеживания выполнения упражнений по мастям (для джокеров)
 
     public void setGameRoom(GameRoom gameRoom) {
         this.gameRoom = gameRoom;

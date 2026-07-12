@@ -7,10 +7,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Suits {
 
-    CLUBS("Трефы"),
-    DIAMONDS("Бубны"),
-    HEARTS("Червы"),
-    SPADES("Пики");
+    CLUBS("Трефы", CardColor.BLACK),
+    DIAMONDS("Бубны", CardColor.RED),
+    HEARTS("Червы", CardColor.RED),
+    SPADES("Пики", CardColor.BLACK);
 
     private final String description;
+    private final CardColor color;
 }

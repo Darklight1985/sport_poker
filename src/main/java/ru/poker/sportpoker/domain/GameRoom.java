@@ -10,6 +10,7 @@ import org.hibernate.annotations.*;
 import org.springframework.context.ApplicationEventPublisher;
 import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.StatusGame;
+import ru.poker.sportpoker.enums.Suits;
 import ru.poker.sportpoker.event.GameEndEvent;
 
 import java.time.LocalDateTime;
@@ -95,6 +96,16 @@ public class GameRoom {
     @Enumerated(EnumType.STRING)
     @Column(name = "exercise")
     private Set<Exercises> exercises = new HashSet<>();
+
+    // transient - не сохраняется в БД, хранится только в памяти
+    @Transient
+    private List<Card> deck;
+
+    @Transient
+    private Map<Suits, Exercises> exerciseMapping;
+
+    @Transient
+    private int cardsDealt;
 
     public GameRoomPlayer getPlayer (UUID playerId) {
         for (GameRoomPlayer gameRoomPlayer : gameRoomPlayers) {

@@ -4,6 +4,7 @@ import io.jsonwebtoken.JwtException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.poker.sportpoker.domain.Card;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
 import ru.poker.sportpoker.dto.*;
@@ -24,10 +26,11 @@ import ru.poker.sportpoker.repository.specification.GameRoomSpecification;
 import ru.poker.sportpoker.utils.TokenUtils;
 import ru.poker.sportpoker.validate.ValidationException;
 
-import java.util.Set;
+import java.util.*;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameRoomServiceImpl implements GameRoomService {
@@ -38,6 +41,9 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final GameRoomPlayerRepository gameRoomPlayerRepository;
     private final UserMapper userMapper;
     private final RoomMapper roomMapper;
+    private final DeckService deckService;
+    private final ExerciseMapper exerciseMapper;
+    private final MinioFileService minioFileService;
 
     @Override
     @Transactional
@@ -228,7 +234,87 @@ public class GameRoomServiceImpl implements GameRoomService {
         if (readyToGame) {
             gameRoom.setStatus(StatusGame.PLAY);
             activityUserService.activeRoom(gameRoom);
+            // Инициализируем карточную механику
+            activityUserService.initializeGame(gameRoom.getId());
         }
         return readyToGame;
+    }
+
+    @Override
+    @Transactional
+    public CardDto completeCard(UUID roomId) {
+        String userId = keycloakUserService.getCurrentUser();
+        UUID playerId = UUID.fromString(userId);
+
+        GameRoom gameRoom = activityUserService.getActiveRoom(roomId);
+        if (gameRoom == null || !StatusGame.PLAY.equals(gameRoom.getStatus())) {
+            throw new NotFoundException("Игра не найдена или не в активной фазе");
+        }
+
+        GameRoomPlayer player = gameRoom.getPlayer(playerId);
+        if (player == null) {
+            throw new NotFoundException("Игрок не найден в комнате");
+        }
+
+        // Засчитываем очки за текущую карту
+        if (player.getCurrentCard() != null) {
+            player.setScore(player.getScore() + player.getCurrentCard().getPoints());
+            log.info("Игрок {} получил {} очков за карту {}. Текущий счет: {}",
+                    playerId, player.getCurrentCard().getPoints(), 
+                    player.getCurrentCard().getRank().getDescription(), player.getScore());
+        }
+
+        // Выдаем новую карту
+        Card newCard = deckService.dealCard(gameRoom.getDeck());
+        player.setCurrentCard(newCard);
+        player.setCompletedExercises(new HashMap<>());
+        gameRoom.setCardsDealt(gameRoom.getCardsDealt() + 1);
+
+        log.info("Игроку {} выдана новая карта: {}", playerId, newCard);
+
+        // Генерируем URL изображения карты
+        String imageUrl = generateCardImageUrl(newCard);
+
+        return CardDto.fromCard(newCard, imageUrl);
+    }
+
+    @Override
+    public PlayerStatsDto getPlayerStats(UUID roomId) {
+        String userId = keycloakUserService.getCurrentUser();
+        UUID playerId = UUID.fromString(userId);
+
+        GameRoom gameRoom = activityUserService.getActiveRoom(roomId);
+        if (gameRoom == null) {
+            throw new NotFoundException("Игра не найдена или не в активной фазе");
+        }
+
+        GameRoomPlayer player = gameRoom.getPlayer(playerId);
+        if (player == null) {
+            throw new NotFoundException("Игрок не найден в комнате");
+        }
+
+        // Генерируем URL изображения карты
+        String imageUrl = generateCardImageUrl(player.getCurrentCard());
+
+        return PlayerStatsDto.builder()
+                .playerId(playerId)
+                .score(player.getScore())
+                .currentCard(CardDto.fromCard(player.getCurrentCard(), imageUrl))
+                .build();
+    }
+
+    /**
+     * Генерирует URL изображения карты.
+     */
+    private String generateCardImageUrl(Card card) {
+        if (card == null) {
+            return null;
+        }
+        if (card.isJoker()) {
+            return minioFileService.getJokerUrl(card.getColor().name());
+        }
+        String rankName = card.getRank().name().toLowerCase();
+        String suitName = card.getSuit().name().toLowerCase();
+        return minioFileService.getCardUrl(rankName, suitName);
     }
 }

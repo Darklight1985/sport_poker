@@ -1,0 +1,64 @@
+version: '3.7'
+services:
+
+  database:
+    container_name: poker_base
+    image: postgres:14
+    environment:
+      POSTGRES_USER: poker
+      POSTGRES_PASSWORD: uc31bQ0j1z5Sxgw0ko4w
+      POSTGRES_DB: poker_base
+    ports:
+      - "5434:5432"
+    volumes:
+      - poker_psql_vol:/var/lib/postgresql/data
+    networks:
+      - poker_net
+
+  keycloak:
+    container_name: Keycloak
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - "9090:8080"
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_SCHEMA: public
+      DB_USER: root
+      DB_PASSWORD: root
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - poker_net
+    depends_on:
+      - database
+    command:
+      - "start-dev"
+      - "--http-host=0.0.0.0"
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      ACCESS_KEY: minioadmin
+      SECRET_KEY: minioadmin
+    volumes:
+      - minio_data:/data
+      - minio_config:/root/.minio
+    command: server /data --console-address ":9001"
+
+networks:
+  poker_net:
+    external: true
+
+volumes:
+  poker_psql_vol:
+    external: true
+  minio_data:
+  minio_config:

@@ -32,6 +32,9 @@ public class MinioFileService {
     @Value("${minio.bucket.cards}")
     private String bucketCards;
 
+    @Value("${minio.public-url}")
+    private String minioPublicUrl;
+
     @PostConstruct
     private void init() {
         createBucket(bucketAvatar);
@@ -128,5 +131,20 @@ public class MinioFileService {
 
         String contentType = response.headers().get("content-type");
         return new MinioFileResponse(contentType, new InputStreamResource(response));
+    }
+
+    /**
+     * Генерирует публичный URL для изображения карты.
+     * Формат: {minioPublicUrl}/cards/{cardName}_{suitName}.jpg
+     */
+    public String getCardUrl(String cardName, String suitName) {
+        return minioPublicUrl + "/cards/" + cardName + "_" + suitName + ".jpg";
+    }
+
+    /**
+     * Генерирует URL для джокера.
+     */
+    public String getJokerUrl(String color) {
+        return minioPublicUrl + "/cards/" + color.toLowerCase() + "_joker.jpg";
     }
 }

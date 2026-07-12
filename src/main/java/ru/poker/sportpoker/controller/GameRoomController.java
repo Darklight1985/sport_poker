@@ -12,9 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import ru.poker.sportpoker.dto.CardDto;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.GameRoomShortView;
 import ru.poker.sportpoker.dto.GameRoomView;
+import ru.poker.sportpoker.dto.PlayerStatsDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.service.GameRoomService;
@@ -158,5 +160,29 @@ public class GameRoomController {
             throw new ValidationException(bindingResult);
         }
         gameRoomService.kickFromRoom(userId);
+    }
+
+    @Operation(description = "Выполнить упражнение и получить следующую карту")
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<CardDto> completeCard(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
+        roomValidator.validateReadyToGame(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            throw new ValidationException(bindingResult);
+        }
+        CardDto card = gameRoomService.completeCard(id);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(card);
+    }
+
+    @Operation(description = "Получить текущую статистику игрока")
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<PlayerStatsDto> getPlayerStats(@PathVariable UUID id) {
+        BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
+        roomValidator.validateReadyToGame(id, bindingResult);
+        if (bindingResult.hasErrors()) {
+            throw new ValidationException(bindingResult);
+        }
+        PlayerStatsDto stats = gameRoomService.getPlayerStats(id);
+        return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
 }

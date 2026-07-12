@@ -3,9 +3,11 @@ package ru.poker.sportpoker.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import ru.poker.sportpoker.dto.CardDto;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.GameRoomShortView;
 import ru.poker.sportpoker.dto.GameRoomView;
+import ru.poker.sportpoker.dto.PlayerStatsDto;
 import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.enums.StatusGame;
 
@@ -94,4 +96,20 @@ public interface GameRoomService {
      * @param playerId
      */
     void kickFromRoom(UUID playerId);
+
+    /**
+     * Взять карту из колоды и добавить очки игроку
+     *
+     * @param roomId Идентификатор игровой комнаты
+     * @return DTO с взятой картой
+     */
+    CardDto completeCard(UUID roomId);
+
+    /**
+     * Получение текущей статистики игрока
+     *
+     * @param roomId Идентификатор игровой комнаты
+     * @return Статистика текущего игрока
+     */
+    PlayerStatsDto getPlayerStats(UUID roomId);
 }
