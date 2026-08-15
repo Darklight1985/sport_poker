@@ -9,13 +9,16 @@ import org.springframework.stereotype.Service;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
 import ru.poker.sportpoker.domain.Card;
+import ru.poker.sportpoker.dto.CardDto;
 import ru.poker.sportpoker.dto.GameMappingDto;
 import ru.poker.sportpoker.dto.GameRankingDto;
 import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.Suits;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.event.GameEndEvent;
+import ru.poker.sportpoker.event.TimerTickEvent;
 import ru.poker.sportpoker.repository.GameRoomRepository;
+import ru.poker.sportpoker.utils.TokenUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +37,8 @@ public class ActivityUsersServiceImpl implements ActivityUserService {
     private final ApplicationEventPublisher eventPublisher;
     private final DeckService deckService;
     private final ExerciseMapper exerciseMapper;
+    private final GameRoomSseService sseService;
+    private final MinioFileService minioFileService;
 
     //TODO по этой мапе можно проводить валидацию что если комната уже здесь то все выйти из игры уже не можешь
     private static final Map<UUID, GameRoom> activeRoom = new ConcurrentHashMap<>();
@@ -56,7 +61,22 @@ public class ActivityUsersServiceImpl implements ActivityUserService {
             gameRoom.setStatus(StatusGame.END);
             activeRoom.remove(event.getRoomId());
             gameRoomRepository.save(gameRoom);
+            
+            // Отправляем RANKING всем игрокам
+            GameRankingDto ranking = getGameRanking(event.getRoomId());
+            sseService.sendToRoom(event.getRoomId(), "RANKING", ranking);
+            
+            // Удаляем эмиттеры комнаты
+            sseService.removeRoomSubscribers(event.getRoomId());
         }
+    }
+
+    @EventListener
+    public void timerTick(TimerTickEvent event) {
+        // Отправляем TIMER событие всем игрокам комнаты
+        sseService.sendToRoom(event.getRoomId(), "TIMER", Map.of(
+                "minutesLeft", event.getMinutesLeft()
+        ));
     }
 
     @Override
@@ -79,13 +99,23 @@ public class ActivityUsersServiceImpl implements ActivityUserService {
         // 3. Сбрасываем очки и раздаем карты игрокам
         for (GameRoomPlayer player : gameRoom.getGameRoomPlayers()) {
             player.setScore(0);
-            player.setCurrentCard(deckService.dealCard(deck));
+            player.setCurrentCard(deckService.dealCard(deck, gameRoom.getPlayedCards()));
             player.setCompletedExercises(new java.util.HashMap<>());
             log.debug("Игроку {} выдана карта: {}", player.getPlayersId(), player.getCurrentCard());
         }
 
         log.info("Игра инициализирована в комнате {}: колода из {} карт, маппинг {}", 
                 roomId, gameRoom.getDeck().size(), mapping);
+
+        // 4. Отправляем MAPPING всем игрокам
+        sseService.sendToRoom(roomId, "MAPPING", new GameMappingDto(mapping));
+
+        // 5. Отправляем CARD каждому игроку
+        for (GameRoomPlayer player : gameRoom.getGameRoomPlayers()) {
+            String imageUrl = generateCardImageUrl(player.getCurrentCard());
+            CardDto cardDto = CardDto.fromCard(player.getCurrentCard(), imageUrl);
+            sseService.sendToPlayer(roomId, player.getPlayersId(), "CARD", cardDto);
+        }
     }
 
     @Override
@@ -125,5 +155,20 @@ public class ActivityUsersServiceImpl implements ActivityUserService {
         return GameRankingDto.builder()
                 .rankings(rankings)
                 .build();
+    }
+
+    /**
+     * Генерирует URL изображения карты.
+     */
+    private String generateCardImageUrl(Card card) {
+        if (card == null) {
+            return null;
+        }
+        if (card.isJoker()) {
+            return minioFileService.getJokerUrl(card.getColor().name());
+        }
+        String rankName = card.getRank().name().toLowerCase();
+        String suitName = card.getSuit().name().toLowerCase();
+        return minioFileService.getCardUrl(rankName, suitName);
     }
 }

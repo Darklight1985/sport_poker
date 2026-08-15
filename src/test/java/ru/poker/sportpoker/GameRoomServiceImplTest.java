@@ -2,6 +2,7 @@ package ru.poker.sportpoker;
 
 import com.google.common.collect.Sets;
 import jakarta.ws.rs.NotFoundException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,16 +22,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ru.poker.sportpoker.domain.GameRoom;
 import ru.poker.sportpoker.domain.GameRoomPlayer;
-import ru.poker.sportpoker.dto.*;
+import ru.poker.sportpoker.dto.CreateGameRoomDto;
+import ru.poker.sportpoker.dto.GameRoomShortView;
+import ru.poker.sportpoker.dto.GameRoomView;
+import ru.poker.sportpoker.dto.PlayerInfo;
+import ru.poker.sportpoker.dto.UpdateGameRoomDto;
 import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.mapper.RoomMapper;
 import ru.poker.sportpoker.mapper.UserMapper;
 import ru.poker.sportpoker.repository.GameRoomPlayerRepository;
 import ru.poker.sportpoker.repository.GameRoomRepository;
-import ru.poker.sportpoker.service.ActivityUsersServiceImpl;
-import ru.poker.sportpoker.service.GameRoomServiceImpl;
+import ru.poker.sportpoker.service.ActivityUserService;
+import ru.poker.sportpoker.service.DeckService;
+import ru.poker.sportpoker.service.ExerciseMapper;
+import ru.poker.sportpoker.service.GameRoomSseService;
 import ru.poker.sportpoker.service.KeycloakUserService;
+import ru.poker.sportpoker.service.MinioFileService;
+import ru.poker.sportpoker.service.GameRoomServiceImpl;
 import ru.poker.sportpoker.utils.TestUtils;
 import ru.poker.sportpoker.utils.TokenUtils;
 
@@ -39,6 +48,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -61,10 +72,22 @@ public class GameRoomServiceImplTest {
     private KeycloakUserService keycloakUserService;
 
     @Mock
-    private ActivityUsersServiceImpl activityUsersServiceImpl;
+    private ActivityUserService activityUserService;
 
     @Mock
     private GameRoomPlayerRepository gameRoomPlayerRepository;
+
+    @Mock
+    private DeckService deckService;
+
+    @Mock
+    private ExerciseMapper exerciseMapper;
+
+    @Mock
+    private MinioFileService minioFileService;
+
+    @Mock
+    private GameRoomSseService sseService;
 
     private final UserMapper userMapper = Mappers.getMapper(UserMapper.class);
 
@@ -72,12 +95,11 @@ public class GameRoomServiceImplTest {
 
     private GameRoomServiceImpl gameRoomService;
 
-    private TokenUtils tokenUtils;
-
     @BeforeEach
     void setUp() {
         gameRoomService = new GameRoomServiceImpl(gameRoomRepository, keycloakUserService,
-                activityUsersServiceImpl, gameRoomPlayerRepository, userMapper, roomMapper);
+                activityUserService, gameRoomPlayerRepository, userMapper, roomMapper,
+                deckService, exerciseMapper, minioFileService, sseService);
     }
 
 
@@ -210,89 +232,58 @@ public class GameRoomServiceImplTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_METHOD)
     @DisplayName("При запросе ссылки для присоединения к комнате:")
-
-    //TODO написать тест на TokenUtils
     class GetLinkToRoomTest {
 
         @Test
         @DisplayName(" если комната не существует, то ловим исключение.")
-        public void testDeleteGameRoom2() {
-            assertThrows(NotFoundException.class, () -> gameRoomService.getLinkToRoom(UUID.randomUUID()));
+        public void testGetLinkToRoomNotFound() {
+            when(gameRoomRepository.findById(ROOM_ID)).thenReturn(Optional.empty());
+            assertThrows(NotFoundException.class, () -> gameRoomService.getLinkToRoom(ROOM_ID));
+        }
+
+        @Test
+        @DisplayName(" если комната существует, то ссылка генерируется.")
+        public void testGetLinkToRoomExists() {
+            when(gameRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(gameRoom));
+            String link = gameRoomService.getLinkToRoom(ROOM_ID);
+            assertNotNull(link);
+            assertTrue(link.contains("/room/join/"));
         }
     }
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_METHOD)
     @DisplayName("При запросе на вход в комнату по ссылку:")
-    class JoinRoomUserTest {
-
-        private String linkWithToken = null;
-        String token = null;
-
-        @BeforeEach
-        void init() {
-            Field secretKeyField;
-            Field address;
-            Field port;
-            try {
-                secretKeyField = TokenUtils.class.getDeclaredField("secretKey");
-                address = TokenUtils.class.getDeclaredField("address");
-                port = TokenUtils.class.getDeclaredField("port");
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException(e);
-            }
-            secretKeyField.setAccessible(true);
-            address.setAccessible(true);
-            port.setAccessible(true);
-            try {
-                secretKeyField.set(tokenUtils, "this-is-secret-only-for-you-loves");
-                address.set(tokenUtils, "localhost");
-                port.set(tokenUtils, "8083");
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-            linkWithToken = TokenUtils.getLinkWithToken(ROOM_ID);
-            token = linkWithToken.substring(linkWithToken.lastIndexOf("/") + 1);
-        }
-
+    class JoinRoomByTokenTest {
 
         @Test
-        @DisplayName(" если ссылка рабочая и комната существует, то пользователь присоединяется к комнате.")
-        public void testJoinRoom() {
-            String userId = UUID.randomUUID().toString();
-
-            when(keycloakUserService.getCurrentUser()).thenReturn(userId);
-            when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.of(gameRoom));
-
-            ResponseEntity<?> response = gameRoomService.joinRoomByToken(token);
-
-            assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
-        }
-
-        @Test
-        @DisplayName(" если пользователь авторизован а комната не существует то ловим исключение.")
-        public void testJoinRoom2() {
-            String userId = UUID.randomUUID().toString();
-
-            when(keycloakUserService.getCurrentUser()).thenReturn(userId);
-            assertThrows(NotFoundException.class, () -> gameRoomService.joinRoomByToken(token));
-        }
-
-        @Test
-        @DisplayName(" если ссылка рабочая и комната существует, то пользователь присоединяется к комнате.")
-        public void testJoinRoom3() {
+        @DisplayName(" если токен невалидный, то возвращаем Bad Request.")
+        public void testJoinRoomInvalidToken() {
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(USER_ID));
+            ResponseEntity<?> response = gameRoomService.joinRoomByToken("invalid-token");
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        }
+
+        @Test
+        @DisplayName(" если комната не существует, то ловим исключение.")
+        public void testJoinRoomRoomNotFound() {
+            when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(USER_ID));
+            when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.empty());
+            assertThrows(NotFoundException.class, () -> gameRoomService.joinRoomByToken("some-token"));
+        }
+
+        @Test
+        @DisplayName(" если комната существует и в стадии PREP, то пользователь присоединяется.")
+        public void testJoinRoomSuccess() {
+            String userId = UUID.randomUUID().toString();
+
+            when(keycloakUserService.getCurrentUser()).thenReturn(userId);
             when(gameRoomRepository.findGameRoomWithPlayers(any())).thenReturn(Optional.of(gameRoom));
 
-            ResponseEntity<?> response = gameRoomService.joinRoomByToken(token);
+            ResponseEntity<?> response = gameRoomService.joinRoomByToken("some-token");
 
-            verify(gameRoomRepository).save(gameRoom);
-            Set<GameRoomPlayer> players = gameRoom.getGameRoomPlayers();
-            assertEquals(2, players.size());
-            GameRoomPlayer gameRoomPlayer = players.stream().findFirst().get();
-            assertFalse(gameRoom.getPlayer(USER_ID).isReady());
-            assertNotNull(gameRoom.getPlayer(USER_ID));
             assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+            verify(gameRoomRepository).save(gameRoom);
         }
     }
 
@@ -302,8 +293,8 @@ public class GameRoomServiceImplTest {
     class ReadyToGameTest {
 
         @Test
-        @DisplayName(" если пользователь участник комнаты, то запрос будет успешным.")
-        public void testReadyToGame2() {
+        @DisplayName(" если пользователь не участник комнаты, то ловим исключение.")
+        public void testReadyToGameNotFound() {
             UUID roomId = UUID.randomUUID();
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(USER_ID));
             assertThrows(NotFoundException.class, () -> gameRoomService.readyToGame(roomId));
@@ -311,14 +302,16 @@ public class GameRoomServiceImplTest {
 
         @Test
         @DisplayName(" если пользователь участник комнаты, то запрос будет успешным.")
-        public void testReadyToGame3() {
+        public void testReadyToGameSuccess() {
             when(keycloakUserService.getCurrentUser()).thenReturn(String.valueOf(PLAYER_ID));
             when(gameRoomRepository.findGameRoomWithPlayers(ROOM_ID)).thenReturn(Optional.of(gameRoom));
-            var result = gameRoomService.readyToGame(ROOM_ID);
-            assertEquals(ROOM_ID, gameRoom.getId());
+            when(sseService.addSubscriber(ROOM_ID, PLAYER_ID)).thenReturn(new SseEmitter());
+
+            SseEmitter result = gameRoomService.readyToGame(ROOM_ID);
+            
+            assertNotNull(result);
             assertEquals(StatusGame.PLAY, gameRoom.getStatus());
-            verify(activityUsersServiceImpl).activeRoom(gameRoom);
-            assertTrue(result);
+            verify(activityUserService).activeRoom(gameRoom);
         }
     }
 

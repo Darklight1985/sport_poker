@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final DeckService deckService;
     private final ExerciseMapper exerciseMapper;
     private final MinioFileService minioFileService;
+    private final GameRoomSseService sseService;
 
     @Override
     @Transactional
@@ -176,15 +178,24 @@ public class GameRoomServiceImpl implements GameRoomService {
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000)
     )
-    public boolean readyToGame(UUID gameRoomId) {
+    public SseEmitter readyToGame(UUID gameRoomId) {
         String userId = keycloakUserService.getCurrentUser();
+        UUID playerId = UUID.fromString(userId);
 
         GameRoom gameRoomOld = gameRoomRepository.findGameRoomWithPlayers(gameRoomId)
                 .orElseThrow(() -> new NotFoundException(gameRoomId.toString()));
 
         GameRoomPlayer gameRoomPlayer = gameRoomOld.getPlayer(UUID.fromString(userId));
         gameRoomPlayer.setReady(true);
-        return checkRoomToGame(gameRoomOld);
+        
+        // Подписываем игрока на SSE события
+        SseEmitter emitter = sseService.addSubscriber(gameRoomId, playerId);
+        
+        // Проверяем, готовы ли все игроки
+        checkRoomToGame(gameRoomOld);
+        
+        // Возвращаем эмиттер для получения событий
+        return emitter;
     }
 
 
@@ -265,7 +276,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         }
 
         // Выдаем новую карту
-        Card newCard = deckService.dealCard(gameRoom.getDeck());
+        Card newCard = deckService.dealCard(gameRoom.getDeck(), gameRoom.getPlayedCards());
         player.setCurrentCard(newCard);
         player.setCompletedExercises(new HashMap<>());
         gameRoom.setCardsDealt(gameRoom.getCardsDealt() + 1);
@@ -275,7 +286,14 @@ public class GameRoomServiceImpl implements GameRoomService {
         // Генерируем URL изображения карты
         String imageUrl = generateCardImageUrl(newCard);
 
-        return CardDto.fromCard(newCard, imageUrl);
+        // Отправляем SCORE всем игрокам комнаты
+        sseService.sendToRoom(roomId, "SCORE", getRoomScores(roomId));
+        
+        // Отправляем CARD текущему игроку
+        CardDto cardDto = CardDto.fromCard(newCard, imageUrl);
+        sseService.sendToPlayer(roomId, playerId, "CARD", cardDto);
+
+        return cardDto;
     }
 
     @Override
@@ -316,5 +334,20 @@ public class GameRoomServiceImpl implements GameRoomService {
         String rankName = card.getRank().name().toLowerCase();
         String suitName = card.getSuit().name().toLowerCase();
         return minioFileService.getCardUrl(rankName, suitName);
+    }
+
+    /**
+     * Получает текущие очки всех игроков в комнате.
+     */
+    private Map<UUID, Integer> getRoomScores(UUID roomId) {
+        GameRoom gameRoom = activityUserService.getActiveRoom(roomId);
+        if (gameRoom == null) {
+            return Map.of();
+        }
+        Map<UUID, Integer> scores = new HashMap<>();
+        for (GameRoomPlayer player : gameRoom.getGameRoomPlayers()) {
+            scores.put(player.getPlayersId(), player.getScore());
+        }
+        return scores;
     }
 }

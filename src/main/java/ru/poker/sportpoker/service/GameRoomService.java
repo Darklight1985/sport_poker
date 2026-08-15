@@ -3,6 +3,7 @@ package ru.poker.sportpoker.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.poker.sportpoker.dto.CardDto;
 import ru.poker.sportpoker.dto.CreateGameRoomDto;
 import ru.poker.sportpoker.dto.GameRoomShortView;
@@ -78,11 +79,13 @@ public interface GameRoomService {
     ResponseEntity<?> joinRoomByPassword(UUID roomId);
 
     /**
-     * Метод указывает что игрок готов к игре в своей комнате
+     * Метод указывает что игрок готов к игре в своей комнате.
+     * Возвращает SseEmitter для получения событий игры.
      *
      * @param gameRoomId Идентификатор игровой комнаты
+     * @return SSE эмиттер
      */
-    boolean readyToGame(UUID gameRoomId);
+    SseEmitter readyToGame(UUID gameRoomId);
 
     /**
      * Метод позволяющий текущему игроку покинуть игровую комнату

@@ -12,6 +12,7 @@ import ru.poker.sportpoker.enums.Exercises;
 import ru.poker.sportpoker.enums.StatusGame;
 import ru.poker.sportpoker.enums.Suits;
 import ru.poker.sportpoker.event.GameEndEvent;
+import ru.poker.sportpoker.event.TimerTickEvent;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -101,6 +102,10 @@ public class GameRoom {
     @Transient
     private List<Card> deck;
 
+    // Карты, которые игроки уже отыграли (для пересоздания колоды)
+    @Transient
+    private List<Card> playedCards = new ArrayList<>();
+
     @Transient
     private Map<Suits, Exercises> exerciseMapping;
 
@@ -138,6 +143,7 @@ public class GameRoom {
             if (minutesLeft > 0) {
                 minutesLeft--;
                 log.debug("В комнате {} времени осталось - {} минут", name, minutesLeft);
+                eventPublisher.publishEvent(new TimerTickEvent(id, minutesLeft));
             } else {
                 eventPublisher.publishEvent(new GameEndEvent(id));
                 scheduler.shutdown();

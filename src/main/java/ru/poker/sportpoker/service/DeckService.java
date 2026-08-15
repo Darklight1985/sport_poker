@@ -58,13 +58,23 @@ public class DeckService {
 
     /**
      * Выдает карту сверху колоды.
-     * Если колода пуста — пересоздает и перемешивает.
+     * Если колода пуста — пересоздает и перемешивает из playedCards.
      */
-    public Card dealCard(List<Card> deck) {
+    public Card dealCard(List<Card> deck, List<Card> playedCards) {
         if (deck.isEmpty()) {
-            log.info("Колода пуста. Пересоздаем и перемешиваем.");
-            deck.addAll(createFullDeck());
-            shuffle(deck);
+            log.info("Колода пуста. Пересоздаем из отыгранных карт.");
+            if (!playedCards.isEmpty()) {
+                // Перемешиваем отыгранные карты и добавляем в колоду
+                deck.addAll(playedCards);
+                shuffle(deck);
+                playedCards.clear();
+                log.info("Колода восполнена из {} отыгранных карт", deck.size());
+            } else {
+                // playedCards пуста — создаем полную колоду заново
+                deck.addAll(createFullDeck());
+                shuffle(deck);
+                log.info("Создана новая полная колода из {} карт", deck.size());
+            }
         }
 
         Card card = deck.remove(deck.size() - 1);

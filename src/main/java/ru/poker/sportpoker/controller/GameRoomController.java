@@ -10,6 +10,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.poker.sportpoker.dto.CardDto;
@@ -129,14 +130,15 @@ public class GameRoomController {
 
     @Operation(description = "Принятие от игрока готовности к игре")
     @PostMapping("/{id}/ready")
-    public ResponseEntity<Boolean> readyToGame(@PathVariable UUID id) {
+    public ResponseEntity<SseEmitter> readyToGame(@PathVariable UUID id) {
         BindingResult bindingResult = new BeanPropertyBindingResult(id, "room_id");
         roomValidator.validateReadyToGame(id, bindingResult);
         if (bindingResult.hasErrors()) {
             log.debug("VAL_ERROR_COUNT_LOG", bindingResult.getErrorCount());
             throw new ValidationException(bindingResult);
         }
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(gameRoomService.readyToGame(id));
+        SseEmitter emitter = gameRoomService.readyToGame(id);
+        return ResponseEntity.ok(emitter);
     }
 
     @Operation(description = "Покинуть игровую комнату")
@@ -185,4 +187,5 @@ public class GameRoomController {
         PlayerStatsDto stats = gameRoomService.getPlayerStats(id);
         return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
+
 }
